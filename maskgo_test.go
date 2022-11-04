@@ -2,6 +2,7 @@ package maskgo
 
 import (
 	"math/rand"
+	"regexp"
 	"testing"
 
 	"github.com/goccy/go-reflect"
@@ -364,6 +365,103 @@ func TestMaskFilled(t *testing.T) {
 	}
 }
 
+func TestMaskHashString(t *testing.T) {
+	type stringTest struct {
+		Usagi string `mask:"hash"`
+	}
+	type stringPtrTest struct {
+		Usagi *string `mask:"hash"`
+	}
+	type stringSliceTest struct {
+		Usagi []string `mask:"hash"`
+	}
+	type stringSlicePtrTest struct {
+		Usagi *[]string `mask:"hash"`
+	}
+
+	tests := map[string]struct {
+		input any
+		want  any
+	}{
+		"string": {
+			input: "ヤハッ！",
+			want:  "ヤハッ！",
+		},
+		"zero string": {
+			input: "",
+			want:  "",
+		},
+		"string ptr": {
+			input: convertStringPtr("ヤハッ！"),
+			want:  convertStringPtr("ヤハッ！"),
+		},
+		"nil string ptr": {
+			input: (*string)(nil),
+			want:  (*string)(nil),
+		},
+		"string fields": {
+			input: &stringTest{Usagi: "ヤハッ！"},
+			want:  &stringTest{Usagi: "a6ab5728db57954641b2e155adc61f2cbdfc7063"},
+		},
+		"zero string fields": {
+			input: &stringTest{},
+			want:  &stringTest{Usagi: ""},
+		},
+		"string slice": {
+			input: []string{"ハァ？", "ウラ", "フゥン"},
+			want:  []string{"ハァ？", "ウラ", "フゥン"},
+		},
+		"nil string slice": {
+			input: ([]string)(nil),
+			want:  ([]string)(nil),
+		},
+		"string slice ptr": {
+			input: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
+			want:  convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
+		},
+		"nil string slice ptr": {
+			input: (*[]string)(nil),
+			want:  (*[]string)(nil),
+		},
+		"string ptr fields": {
+			input: &stringPtrTest{Usagi: convertStringPtr("ヤハッ！")},
+			want:  &stringPtrTest{Usagi: convertStringPtr("a6ab5728db57954641b2e155adc61f2cbdfc7063")},
+		},
+		"nil string ptr fields": {
+			input: &stringPtrTest{},
+			want:  &stringPtrTest{Usagi: (*string)(nil)},
+		},
+		"string slice fields": {
+			input: &stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
+			want:  &stringSliceTest{Usagi: []string{"48a8b33f36a35631f584844686adaba89a6f156a", "ecef3e43f07f7150c089e99d5e1041259b1189d5", "17fa078ad3f2c34c17ee58b9119963548ddcf1ef"}},
+		},
+		"nil string slice fields": {
+			input: &stringSliceTest{},
+			want:  &stringSliceTest{Usagi: ([]string)(nil)},
+		},
+		"string slice ptr fields": {
+			input: &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"})},
+			want:  &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"48a8b33f36a35631f584844686adaba89a6f156a", "ecef3e43f07f7150c089e99d5e1041259b1189d5", "17fa078ad3f2c34c17ee58b9119963548ddcf1ef"})},
+		},
+		"nil string slice ptr fields": {
+			input: &stringSlicePtrTest{},
+			want:  &stringSlicePtrTest{Usagi: (*[]string)(nil)},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			defer cleanup(t)
+			got, err := Mask(tt.input)
+			assert.Nil(t, err)
+
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
+			}
+		})
+	}
+}
+
 func TestMaskInt(t *testing.T) {
 	tests := map[string]struct {
 		tag   string
@@ -501,6 +599,11 @@ func getStructType(rt reflect.Type) (reflect.Type, bool) {
 	default:
 		return rt, false
 	}
+}
+
+func validSha1(s string) bool {
+	ok, _ := regexp.MatchString("^[a-fA-F0-9]{40}$", s)
+	return ok
 }
 
 func convertStringPtr(s string) *string {

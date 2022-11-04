@@ -1,10 +1,11 @@
 // 日付マスキング：有効なランダムな日付+-
-// ハッシュ化
 // 正規表現
 // zero値にする
 package maskgo
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -24,6 +25,7 @@ const tagName = "mask"
 const (
 	MaskTypeFilled = "filled"
 	MaskTypeRandom = "random"
+	MaskTypeHash   = "hash"
 )
 
 type storeStruct struct {
@@ -41,6 +43,7 @@ var (
 	maskChar                                    = "*"
 	maskStringFuncMap map[string]maskStringFunc = map[string]maskStringFunc{
 		MaskTypeFilled: maskFilledString,
+		MaskTypeHash:   maskHashString,
 	}
 	maskIntFuncMap map[string]maskIntFunc = map[string]maskIntFunc{
 		MaskTypeRandom: maskRandomInt,
@@ -65,6 +68,11 @@ func MaskString(tag, value string) (string, error) {
 
 func maskFilledString(arg, value string) (string, error) {
 	return strings.Repeat(maskChar, utf8.RuneCountInString(value)), nil
+}
+
+func maskHashString(arg, value string) (string, error) {
+	hash := sha1.Sum(([]byte)(value))
+	return hex.EncodeToString(hash[:]), nil
 }
 
 func MaskInt(tag string, value int) (int, error) {

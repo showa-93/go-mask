@@ -2,7 +2,6 @@ package maskgo
 
 import (
 	"math/rand"
-	"regexp"
 	"testing"
 
 	"github.com/goccy/go-reflect"
@@ -58,6 +57,9 @@ func TestMask(t *testing.T) {
 	type structTest struct {
 		StringTest      stringTest
 		StringSliceTest stringSliceTest
+	}
+	type structSliceTest struct {
+		SliceTest []stringTest
 	}
 	type unexportedTest struct {
 		usagi string
@@ -292,6 +294,20 @@ func TestMask(t *testing.T) {
 				StringSliceTest: stringSliceTest{},
 			},
 		},
+		"struct slice fields": {
+			input: &structSliceTest{
+				SliceTest: []stringTest{
+					{Usagi: "ハァ？"}, {Usagi: "ウラ"}, {Usagi: "フゥン"},
+				},
+			},
+			want: &structSliceTest{
+				SliceTest: []stringTest{{Usagi: "ハァ？"}, {Usagi: "ウラ"}, {Usagi: "フゥン"}},
+			},
+		},
+		"nil struct slice fields": {
+			input: &structSliceTest{},
+			want:  &structSliceTest{SliceTest: ([]stringTest)(nil)},
+		},
 		"unexported fields": {
 			input: &unexportedTest{usagi: "ヤハッ！"},
 			want:  &unexportedTest{},
@@ -327,7 +343,7 @@ func TestMaskString(t *testing.T) {
 			want:  "ヤハッ！",
 		},
 		"filled": {
-			tag:   "filled!!",
+			tag:   MaskTypeFilled,
 			input: "ヤハッ！",
 			want:  "****",
 		},
@@ -540,9 +556,10 @@ func TestMaskHashString(t *testing.T) {
 
 func TestMaskInt(t *testing.T) {
 	tests := map[string]struct {
-		tag   string
-		input int
-		want  int
+		tag     string
+		input   int
+		want    int
+		wantErr bool
 	}{
 		"no tag": {
 			tag:   "",
@@ -554,13 +571,18 @@ func TestMaskInt(t *testing.T) {
 			input: 20190122,
 			want:  20190122,
 		},
+		"randomXX": {
+			tag:     MaskTypeRandom + "XX",
+			input:   20190122,
+			wantErr: true,
+		},
 		"random30": {
-			tag:   "random30",
+			tag:   MaskTypeRandom + "30",
 			input: 20190122,
 			want:  9,
 		},
 		"random1000": {
-			tag:   "random1000",
+			tag:   MaskTypeRandom + "1000",
 			input: 20190122,
 			want:  829,
 		},
@@ -571,9 +593,13 @@ func TestMaskInt(t *testing.T) {
 			rand.Seed(rand.NewSource(1).Int63())
 			defer cleanup(t)
 			got, err := MaskInt(tt.tag, tt.input)
-			assert.Nil(t, err)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Error(diff)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Error(diff)
+				}
 			}
 		})
 	}
@@ -581,9 +607,10 @@ func TestMaskInt(t *testing.T) {
 
 func TestMaskFloat64(t *testing.T) {
 	tests := map[string]struct {
-		tag   string
-		input float64
-		want  float64
+		tag     string
+		input   float64
+		want    float64
+		wantErr bool
 	}{
 		"no tag": {
 			tag:   "",
@@ -595,13 +622,28 @@ func TestMaskFloat64(t *testing.T) {
 			input: 20190122,
 			want:  20190122,
 		},
+		"randomXX.4": {
+			tag:     MaskTypeRandom + "XX.4",
+			input:   20190122,
+			wantErr: true,
+		},
+		"random4.XX": {
+			tag:     MaskTypeRandom + "4.XX",
+			input:   20190122,
+			wantErr: true,
+		},
 		"random5.4": {
-			tag:   "random5.4",
+			tag:   MaskTypeRandom + "5.4",
 			input: 20190122,
 			want:  96011.8989,
 		},
-		"random1.0": {
-			tag:   "random1.0",
+		"random1.1": {
+			tag:   MaskTypeRandom + "1.1",
+			input: 20190122,
+			want:  9.6,
+		},
+		"random1": {
+			tag:   MaskTypeRandom + "1",
 			input: 20190122,
 			want:  9.0,
 		},
@@ -612,9 +654,13 @@ func TestMaskFloat64(t *testing.T) {
 			rand.Seed(rand.NewSource(1).Int63())
 			defer cleanup(t)
 			got, err := MaskFloat64(tt.tag, tt.input)
-			assert.Nil(t, err)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Error(diff)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Error(diff)
+				}
 			}
 		})
 	}
@@ -760,11 +806,6 @@ func getStructType(rt reflect.Type) (reflect.Type, bool) {
 	default:
 		return rt, false
 	}
-}
-
-func validSha1(s string) bool {
-	ok, _ := regexp.MatchString("^[a-fA-F0-9]{40}$", s)
-	return ok
 }
 
 func convertStringPtr(s string) *string {

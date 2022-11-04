@@ -55,8 +55,16 @@ var (
 	}
 )
 
-func RegisterMaskFunc(maskType string, f maskStringFunc) {
+func RegisterMaskStringFunc(maskType string, f maskStringFunc) {
 	maskStringFuncMap[maskType] = f
+}
+
+func RegisterMaskIntFunc(maskType string, f maskIntFunc) {
+	maskIntFuncMap[maskType] = f
+}
+
+func RegisterMaskFloat64Func(maskType string, f maskFloat64Func) {
+	maskFloat64FuncMap[maskType] = f
 }
 
 func MaskString(tag, value string) (string, error) {

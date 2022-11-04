@@ -1,6 +1,7 @@
 package maskgo
 
 import (
+	"math/rand"
 	"testing"
 
 	"github.com/goccy/go-reflect"
@@ -232,6 +233,41 @@ func TestMask(t *testing.T) {
 	}
 }
 
+func TestMaskString(t *testing.T) {
+	tests := map[string]struct {
+		tag   string
+		input string
+		want  string
+	}{
+		"no tag": {
+			tag:   "",
+			input: "ヤハッ！",
+			want:  "ヤハッ！",
+		},
+		"undefined tag": {
+			tag:   "usagi!!",
+			input: "ヤハッ！",
+			want:  "ヤハッ！",
+		},
+		"filled": {
+			tag:   "filled!!",
+			input: "ヤハッ！",
+			want:  "****",
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			defer cleanup(t)
+			got, err := MaskString(tt.tag, tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Error(diff)
+			}
+		})
+	}
+}
+
 func TestMaskFilled(t *testing.T) {
 	type stringTest struct {
 		Usagi string `mask:"filled"`
@@ -328,35 +364,106 @@ func TestMaskFilled(t *testing.T) {
 	}
 }
 
-func TestMaskString(t *testing.T) {
+func TestMaskInt(t *testing.T) {
 	tests := map[string]struct {
 		tag   string
-		input string
-		want  string
+		input int
+		want  int
 	}{
 		"no tag": {
 			tag:   "",
-			input: "ヤハッ！",
-			want:  "ヤハッ！",
+			input: 20190122,
+			want:  20190122,
 		},
 		"undefined tag": {
 			tag:   "usagi!!",
-			input: "ヤハッ！",
-			want:  "ヤハッ！",
+			input: 20190122,
+			want:  20190122,
 		},
-		"filled": {
-			tag:   "filled!!",
-			input: "ヤハッ！",
-			want:  "****",
+		"random30": {
+			tag:   "random30",
+			input: 20190122,
+			want:  9,
+		},
+		"random1000": {
+			tag:   "random1000",
+			input: 20190122,
+			want:  829,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			rand.Seed(rand.NewSource(1).Int63())
+			defer cleanup(t)
+			got, err := MaskInt(tt.tag, tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Error(diff)
+			}
+		})
+	}
+}
+
+func TestMaskRandom(t *testing.T) {
+	type intTest struct {
+		Usagi int `mask:"random1000"`
+	}
+	type intPtrTest struct {
+		Usagi *int `mask:"random1000"`
+	}
+	type intSliceTest struct {
+		Usagi []int `mask:"random1000"`
+	}
+	type intSlicePtrTest struct {
+		Usagi *[]int `mask:"random1000"`
+	}
+
+	tests := map[string]struct {
+		input any
+		want  any
+	}{
+		"int fields": {
+			input: &intTest{Usagi: 20190122},
+			want:  &intTest{Usagi: 829},
+		},
+		"zero int fields": {
+			input: &intTest{},
+			want:  &intTest{Usagi: 0},
+		},
+		"int ptr fields": {
+			input: &intPtrTest{Usagi: convertIntPtr(20190122)},
+			want:  &intPtrTest{Usagi: convertIntPtr(829)},
+		},
+		"nil int ptr fields": {
+			input: &intPtrTest{},
+			want:  &intPtrTest{Usagi: nil},
+		},
+		"int slice fields": {
+			input: &intSliceTest{Usagi: []int{20190122, 20200501, 20200501}},
+			want:  &intSliceTest{Usagi: []int{829, 830, 400}},
+		},
+		"nil int slice fields": {
+			input: &intSliceTest{},
+			want:  &intSliceTest{Usagi: ([]int)(nil)},
+		},
+		"int slice ptr fields": {
+			input: &intSlicePtrTest{Usagi: convertIntSlicePtr([]int{20190122, 20200501, 20200501})},
+			want:  &intSlicePtrTest{Usagi: convertIntSlicePtr([]int{829, 830, 400})},
+		},
+		"nil int slice ptr fields": {
+			input: &intSlicePtrTest{},
+			want:  &intSlicePtrTest{Usagi: (*[]int)(nil)},
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			defer cleanup(t)
-			got, err := MaskString(tt.tag, tt.input)
+			rand.Seed(rand.NewSource(1).Int63())
+			got, err := Mask(tt.input)
 			assert.Nil(t, err)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
 				t.Error(diff)
 			}
 		})
@@ -422,7 +529,7 @@ func cleanup(t *testing.T) {
 
 type benchStruct2 struct {
 	Case1 string
-	Case2 int
+	Case2 int `mask:"random1000"`
 	Case3 bool
 	Case4 []string
 	Case5 map[string]string

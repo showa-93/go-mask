@@ -1,4 +1,3 @@
-// 数値マスキング：ランダムな値+-
 // 日付マスキング：有効なランダムな日付+-
 // ハッシュ化
 // 正規表現
@@ -6,17 +5,25 @@
 package maskgo
 
 import (
+	"math/rand"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 	"unicode/utf8"
 
 	"github.com/goccy/go-reflect"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 const tagName = "mask"
 
 const (
 	MaskTypeFilled = "filled"
+	MaskTypeRandom = "random"
 )
 
 type storeStruct struct {
@@ -24,13 +31,19 @@ type storeStruct struct {
 	structFields []reflect.StructField
 }
 
-type maskStringFunc func(arg, value string) (string, error)
+type (
+	maskStringFunc func(arg, value string) (string, error)
+	maskIntFunc    func(arg string, value int) (int, error)
+)
 
 var (
 	typeToStruct      sync.Map
 	maskChar                                    = "*"
 	maskStringFuncMap map[string]maskStringFunc = map[string]maskStringFunc{
 		MaskTypeFilled: maskFilledString,
+	}
+	maskIntFuncMap map[string]maskIntFunc = map[string]maskIntFunc{
+		MaskTypeRandom: maskRandomInt,
 	}
 )
 
@@ -54,6 +67,27 @@ func maskFilledString(arg, value string) (string, error) {
 	return strings.Repeat(maskChar, utf8.RuneCountInString(value)), nil
 }
 
+func MaskInt(tag string, value int) (int, error) {
+	if tag != "" {
+		for mt, maskIntFunc := range maskIntFuncMap {
+			if strings.HasPrefix(tag, mt) {
+				return maskIntFunc(tag[len(mt):], value)
+			}
+		}
+	}
+
+	return value, nil
+}
+
+func maskRandomInt(arg string, value int) (int, error) {
+	n, err := strconv.Atoi(arg)
+	if err != nil {
+		return 0, err
+	}
+
+	return rand.Intn(n), nil
+}
+
 func Mask(target any) (any, error) {
 	if target == nil {
 		return target, nil
@@ -62,6 +96,7 @@ func Mask(target any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return rv.Interface(), nil
 }
 
@@ -75,6 +110,8 @@ func mask(rv reflect.Value, tag string) (reflect.Value, error) {
 		return maskSlice(rv, tag)
 	case reflect.String:
 		return maskString(rv, tag)
+	case reflect.Int:
+		return maskInt(rv, tag)
 	default:
 		return rv, nil
 	}
@@ -146,6 +183,14 @@ func maskSlice(rv reflect.Value, tag string) (reflect.Value, error) {
 			}
 			rv2.Index(i).SetString(rvf)
 		}
+	case reflect.Int:
+		for i, v := range rv.Interface().([]int) {
+			rvf, err := MaskInt(tag, v)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			rv2.Index(i).SetInt(int64(rvf))
+		}
 	default:
 		for i := 0; i < rv.Len(); i++ {
 			rf, err := mask(rv.Index(i), tag)
@@ -166,4 +211,13 @@ func maskString(rv reflect.Value, tag string) (reflect.Value, error) {
 	}
 
 	return reflect.ValueOf(&sp).Elem(), nil
+}
+
+func maskInt(rv reflect.Value, tag string) (reflect.Value, error) {
+	ip, err := MaskInt(tag, rv.Interface().(int))
+	if err != nil {
+		return reflect.Value{}, err
+	}
+
+	return reflect.ValueOf(&ip).Elem(), nil
 }

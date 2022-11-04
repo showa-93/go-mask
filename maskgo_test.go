@@ -54,6 +54,33 @@ func TestMask(t *testing.T) {
 	type boolPtrTest struct {
 		Usagi *bool
 	}
+	type mapStringToStringTest struct {
+		Usagi map[string]string
+	}
+	type mapStringToIntTest struct {
+		Usagi map[string]int
+	}
+	type mapStringToFloat64Test struct {
+		Usagi map[string]float64
+	}
+	type mapIntToStringTest struct {
+		Usagi map[int]string
+	}
+	type mapIntToIntTest struct {
+		Usagi map[int]int
+	}
+	type mapIntToFloat64Test struct {
+		Usagi map[int]float64
+	}
+	type mapStructToStringTest struct {
+		Usagi map[stringTest]string
+	}
+	type mapStructToIntTest struct {
+		Usagi map[stringTest]int
+	}
+	type mapStructToFloat64Test struct {
+		Usagi map[stringTest]float64
+	}
 	type structTest struct {
 		StringTest      stringTest
 		StringSliceTest stringSliceTest
@@ -108,6 +135,14 @@ func TestMask(t *testing.T) {
 		"nil string slice ptr": {
 			input: (*[]string)(nil),
 			want:  (*[]string)(nil),
+		},
+		"map string to string": {
+			input: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"},
+			want:  map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"},
+		},
+		"nil map string to string": {
+			input: (map[string]string)(nil),
+			want:  (map[string]string)(nil),
 		},
 		"string ptr fields": {
 			input: &stringPtrTest{Usagi: convertStringPtr("ヤハッ！")},
@@ -277,6 +312,46 @@ func TestMask(t *testing.T) {
 			input: &boolPtrTest{},
 			want:  &boolPtrTest{Usagi: (*bool)(nil)},
 		},
+		"map string to string fields": {
+			input: &mapStringToStringTest{Usagi: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
+			want:  &mapStringToStringTest{Usagi: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
+		},
+		"nil map string to string fields": {
+			input: &mapStringToStringTest{},
+			want:  &mapStringToStringTest{Usagi: (map[string]string)(nil)},
+		},
+		"map string to int fields": {
+			input: &mapStringToIntTest{Usagi: map[string]int{"うさぎ": 20190122, "うさぎ2": 20190122, "うさぎ3": 20190122}},
+			want:  &mapStringToIntTest{Usagi: map[string]int{"うさぎ": 20190122, "うさぎ2": 20190122, "うさぎ3": 20190122}},
+		},
+		"map string to float64 fields": {
+			input: &mapStringToFloat64Test{Usagi: map[string]float64{"うさぎ": 20190122, "うさぎ2": 20190122, "うさぎ3": 20190122}},
+			want:  &mapStringToFloat64Test{Usagi: map[string]float64{"うさぎ": 20190122, "うさぎ2": 20190122, "うさぎ3": 20190122}},
+		},
+		"map int to string fields": {
+			input: &mapIntToStringTest{Usagi: map[int]string{201901221: "ハァ？", 201901222: "ウラ", 201901223: "フゥン"}},
+			want:  &mapIntToStringTest{Usagi: map[int]string{201901221: "ハァ？", 201901222: "ウラ", 201901223: "フゥン"}},
+		},
+		"map int to int fields": {
+			input: &mapIntToIntTest{Usagi: map[int]int{1: 201901221, 2: 201901222, 3: 201901223}},
+			want:  &mapIntToIntTest{Usagi: map[int]int{1: 201901221, 2: 201901222, 3: 201901223}},
+		},
+		"map int to float64 fields": {
+			input: &mapIntToFloat64Test{Usagi: map[int]float64{1: 201901221, 2: 201901222, 3: 201901223}},
+			want:  &mapIntToFloat64Test{Usagi: map[int]float64{1: 201901221, 2: 201901222, 3: 201901223}},
+		},
+		"map struct to string fields": {
+			input: &mapStructToStringTest{Usagi: map[stringTest]string{{Usagi: "ウサギ１"}: "ハァ？", {Usagi: "ウサギ２"}: "ウラ", {Usagi: "ウサギ３"}: "フゥン"}},
+			want:  &mapStructToStringTest{Usagi: map[stringTest]string{{Usagi: "ウサギ１"}: "ハァ？", {Usagi: "ウサギ２"}: "ウラ", {Usagi: "ウサギ３"}: "フゥン"}},
+		},
+		"map struct to int fields": {
+			input: &mapStructToIntTest{Usagi: map[stringTest]int{{Usagi: "ウサギ１"}: 201901221, {Usagi: "ウサギ２"}: 201901222, {Usagi: "ウサギ３"}: 201901223}},
+			want:  &mapStructToIntTest{Usagi: map[stringTest]int{{Usagi: "ウサギ１"}: 201901221, {Usagi: "ウサギ２"}: 201901222, {Usagi: "ウサギ３"}: 201901223}},
+		},
+		"map struct to float64 fields": {
+			input: &mapStructToFloat64Test{Usagi: map[stringTest]float64{{Usagi: "ウサギ１"}: 201901221, {Usagi: "ウサギ２"}: 201901222, {Usagi: "ウサギ３"}: 201901223}},
+			want:  &mapStructToFloat64Test{Usagi: map[stringTest]float64{{Usagi: "ウサギ１"}: 201901221, {Usagi: "ウサギ２"}: 201901222, {Usagi: "ウサギ３"}: 201901223}},
+		},
 		"struct fields": {
 			input: &structTest{
 				StringTest:      stringTest{Usagi: "ヤハッ！"},
@@ -355,199 +430,6 @@ func TestMaskString(t *testing.T) {
 			got, err := MaskString(tt.tag, tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Error(diff)
-			}
-		})
-	}
-}
-
-func TestMaskFilled(t *testing.T) {
-	type stringTest struct {
-		Usagi string `mask:"filled"`
-	}
-	type stringPtrTest struct {
-		Usagi *string `mask:"filled"`
-	}
-	type stringSliceTest struct {
-		Usagi []string `mask:"filled"`
-	}
-	type stringSlicePtrTest struct {
-		Usagi *[]string `mask:"filled"`
-	}
-
-	tests := map[string]struct {
-		input any
-		want  any
-	}{
-		"string": {
-			input: "ヤハッ！",
-			want:  "ヤハッ！",
-		},
-		"zero string": {
-			input: "",
-			want:  "",
-		},
-		"string ptr": {
-			input: convertStringPtr("ヤハッ！"),
-			want:  convertStringPtr("ヤハッ！"),
-		},
-		"nil string ptr": {
-			input: (*string)(nil),
-			want:  (*string)(nil),
-		},
-		"string fields": {
-			input: &stringTest{Usagi: "ヤハッ！"},
-			want:  &stringTest{Usagi: "****"},
-		},
-		"zero string fields": {
-			input: &stringTest{},
-			want:  &stringTest{Usagi: ""},
-		},
-		"string slice": {
-			input: []string{"ハァ？", "ウラ", "フゥン"},
-			want:  []string{"ハァ？", "ウラ", "フゥン"},
-		},
-		"nil string slice": {
-			input: ([]string)(nil),
-			want:  ([]string)(nil),
-		},
-		"string slice ptr": {
-			input: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
-			want:  convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
-		},
-		"nil string slice ptr": {
-			input: (*[]string)(nil),
-			want:  (*[]string)(nil),
-		},
-		"string ptr fields": {
-			input: &stringPtrTest{Usagi: convertStringPtr("ヤハッ！")},
-			want:  &stringPtrTest{Usagi: convertStringPtr("****")},
-		},
-		"nil string ptr fields": {
-			input: &stringPtrTest{},
-			want:  &stringPtrTest{Usagi: (*string)(nil)},
-		},
-		"string slice fields": {
-			input: &stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
-			want:  &stringSliceTest{Usagi: []string{"***", "**", "***"}},
-		},
-		"nil string slice fields": {
-			input: &stringSliceTest{},
-			want:  &stringSliceTest{Usagi: ([]string)(nil)},
-		},
-		"string slice ptr fields": {
-			input: &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"})},
-			want:  &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"***", "**", "***"})},
-		},
-		"nil string slice ptr fields": {
-			input: &stringSlicePtrTest{},
-			want:  &stringSlicePtrTest{Usagi: (*[]string)(nil)},
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			defer cleanup(t)
-			got, err := Mask(tt.input)
-			assert.Nil(t, err)
-			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
-				t.Error(diff)
-			}
-		})
-	}
-}
-
-func TestMaskHashString(t *testing.T) {
-	type stringTest struct {
-		Usagi string `mask:"hash"`
-	}
-	type stringPtrTest struct {
-		Usagi *string `mask:"hash"`
-	}
-	type stringSliceTest struct {
-		Usagi []string `mask:"hash"`
-	}
-	type stringSlicePtrTest struct {
-		Usagi *[]string `mask:"hash"`
-	}
-
-	tests := map[string]struct {
-		input any
-		want  any
-	}{
-		"string": {
-			input: "ヤハッ！",
-			want:  "ヤハッ！",
-		},
-		"zero string": {
-			input: "",
-			want:  "",
-		},
-		"string ptr": {
-			input: convertStringPtr("ヤハッ！"),
-			want:  convertStringPtr("ヤハッ！"),
-		},
-		"nil string ptr": {
-			input: (*string)(nil),
-			want:  (*string)(nil),
-		},
-		"string fields": {
-			input: &stringTest{Usagi: "ヤハッ！"},
-			want:  &stringTest{Usagi: "a6ab5728db57954641b2e155adc61f2cbdfc7063"},
-		},
-		"zero string fields": {
-			input: &stringTest{},
-			want:  &stringTest{Usagi: ""},
-		},
-		"string slice": {
-			input: []string{"ハァ？", "ウラ", "フゥン"},
-			want:  []string{"ハァ？", "ウラ", "フゥン"},
-		},
-		"nil string slice": {
-			input: ([]string)(nil),
-			want:  ([]string)(nil),
-		},
-		"string slice ptr": {
-			input: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
-			want:  convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
-		},
-		"nil string slice ptr": {
-			input: (*[]string)(nil),
-			want:  (*[]string)(nil),
-		},
-		"string ptr fields": {
-			input: &stringPtrTest{Usagi: convertStringPtr("ヤハッ！")},
-			want:  &stringPtrTest{Usagi: convertStringPtr("a6ab5728db57954641b2e155adc61f2cbdfc7063")},
-		},
-		"nil string ptr fields": {
-			input: &stringPtrTest{},
-			want:  &stringPtrTest{Usagi: (*string)(nil)},
-		},
-		"string slice fields": {
-			input: &stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
-			want:  &stringSliceTest{Usagi: []string{"48a8b33f36a35631f584844686adaba89a6f156a", "ecef3e43f07f7150c089e99d5e1041259b1189d5", "17fa078ad3f2c34c17ee58b9119963548ddcf1ef"}},
-		},
-		"nil string slice fields": {
-			input: &stringSliceTest{},
-			want:  &stringSliceTest{Usagi: ([]string)(nil)},
-		},
-		"string slice ptr fields": {
-			input: &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"})},
-			want:  &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"48a8b33f36a35631f584844686adaba89a6f156a", "ecef3e43f07f7150c089e99d5e1041259b1189d5", "17fa078ad3f2c34c17ee58b9119963548ddcf1ef"})},
-		},
-		"nil string slice ptr fields": {
-			input: &stringSlicePtrTest{},
-			want:  &stringSlicePtrTest{Usagi: (*[]string)(nil)},
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			defer cleanup(t)
-			got, err := Mask(tt.input)
-			assert.Nil(t, err)
-
-			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
 				t.Error(diff)
 			}
 		})
@@ -661,6 +543,277 @@ func TestMaskFloat64(t *testing.T) {
 				if diff := cmp.Diff(tt.want, got); diff != "" {
 					t.Error(diff)
 				}
+			}
+		})
+	}
+}
+
+func TestMaskFilled(t *testing.T) {
+	type stringTest struct {
+		Usagi string `mask:"filled"`
+	}
+	type stringPtrTest struct {
+		Usagi *string `mask:"filled"`
+	}
+	type stringSliceTest struct {
+		Usagi []string `mask:"filled"`
+	}
+	type stringSlicePtrTest struct {
+		Usagi *[]string `mask:"filled"`
+	}
+	type stringToStringMapTest struct {
+		Usagi map[string]string `mask:"filled"`
+	}
+	type intToStringMapTest struct {
+		Usagi map[int]string `mask:"filled"`
+	}
+	type structToStringMapTest struct {
+		Usagi map[stringTest]string `mask:"filled"`
+	}
+
+	tests := map[string]struct {
+		input any
+		want  any
+	}{
+		"string": {
+			input: "ヤハッ！",
+			want:  "ヤハッ！",
+		},
+		"zero string": {
+			input: "",
+			want:  "",
+		},
+		"string ptr": {
+			input: convertStringPtr("ヤハッ！"),
+			want:  convertStringPtr("ヤハッ！"),
+		},
+		"nil string ptr": {
+			input: (*string)(nil),
+			want:  (*string)(nil),
+		},
+		"string fields": {
+			input: &stringTest{Usagi: "ヤハッ！"},
+			want:  &stringTest{Usagi: "****"},
+		},
+		"zero string fields": {
+			input: &stringTest{},
+			want:  &stringTest{Usagi: ""},
+		},
+		"string slice": {
+			input: []string{"ハァ？", "ウラ", "フゥン"},
+			want:  []string{"ハァ？", "ウラ", "フゥン"},
+		},
+		"nil string slice": {
+			input: ([]string)(nil),
+			want:  ([]string)(nil),
+		},
+		"string slice ptr": {
+			input: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
+			want:  convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
+		},
+		"nil string slice ptr": {
+			input: (*[]string)(nil),
+			want:  (*[]string)(nil),
+		},
+		"string map": {
+			input: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"},
+			want:  map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"},
+		},
+		"nil string map": {
+			input: (map[string]string)(nil),
+			want:  (map[string]string)(nil),
+		},
+		"string ptr fields": {
+			input: &stringPtrTest{Usagi: convertStringPtr("ヤハッ！")},
+			want:  &stringPtrTest{Usagi: convertStringPtr("****")},
+		},
+		"nil string ptr fields": {
+			input: &stringPtrTest{},
+			want:  &stringPtrTest{Usagi: (*string)(nil)},
+		},
+		"string slice fields": {
+			input: &stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
+			want:  &stringSliceTest{Usagi: []string{"***", "**", "***"}},
+		},
+		"nil string slice fields": {
+			input: &stringSliceTest{},
+			want:  &stringSliceTest{Usagi: ([]string)(nil)},
+		},
+		"string slice ptr fields": {
+			input: &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"})},
+			want:  &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"***", "**", "***"})},
+		},
+		"nil string slice ptr fields": {
+			input: &stringSlicePtrTest{},
+			want:  &stringSlicePtrTest{Usagi: (*[]string)(nil)},
+		},
+		"string to string map fields": {
+			input: &stringToStringMapTest{Usagi: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
+			want:  &stringToStringMapTest{Usagi: map[string]string{"うさぎ": "***", "うさぎ2": "**", "うさぎ3": "***"}},
+		},
+		"int to string map fields": {
+			input: &intToStringMapTest{Usagi: map[int]string{1: "ハァ？", 2: "ウラ", 3: "フゥン"}},
+			want:  &intToStringMapTest{Usagi: map[int]string{1: "***", 2: "**", 3: "***"}},
+		},
+		"struct to string map fields": {
+			input: &structToStringMapTest{Usagi: map[stringTest]string{{Usagi: "ヤハッ！"}: "ハァ？", {Usagi: "ヤハッ！！"}: "ウラ", {Usagi: "ヤハッ！！！"}: "フゥン"}},
+			want:  &structToStringMapTest{Usagi: map[stringTest]string{{Usagi: "ヤハッ！"}: "***", {Usagi: "ヤハッ！！"}: "**", {Usagi: "ヤハッ！！！"}: "***"}},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			defer cleanup(t)
+			got, err := Mask(tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
+			}
+		})
+	}
+}
+
+func TestMaskHashString(t *testing.T) {
+	type stringTest struct {
+		Usagi string `mask:"hash"`
+	}
+	type stringPtrTest struct {
+		Usagi *string `mask:"hash"`
+	}
+	type stringSliceTest struct {
+		Usagi []string `mask:"hash"`
+	}
+	type stringSlicePtrTest struct {
+		Usagi *[]string `mask:"hash"`
+	}
+	type stringToStringMapTest struct {
+		Usagi map[string]string `mask:"hash"`
+	}
+	type intToStringMapTest struct {
+		Usagi map[int]string `mask:"hash"`
+	}
+	type structToStringMapTest struct {
+		Usagi map[stringTest]string `mask:"hash"`
+	}
+
+	tests := map[string]struct {
+		input any
+		want  any
+	}{
+		"string": {
+			input: "ヤハッ！",
+			want:  "ヤハッ！",
+		},
+		"zero string": {
+			input: "",
+			want:  "",
+		},
+		"string ptr": {
+			input: convertStringPtr("ヤハッ！"),
+			want:  convertStringPtr("ヤハッ！"),
+		},
+		"nil string ptr": {
+			input: (*string)(nil),
+			want:  (*string)(nil),
+		},
+		"string fields": {
+			input: &stringTest{Usagi: "ヤハッ！"},
+			want:  &stringTest{Usagi: "a6ab5728db57954641b2e155adc61f2cbdfc7063"},
+		},
+		"zero string fields": {
+			input: &stringTest{},
+			want:  &stringTest{Usagi: ""},
+		},
+		"string slice": {
+			input: []string{"ハァ？", "ウラ", "フゥン"},
+			want:  []string{"ハァ？", "ウラ", "フゥン"},
+		},
+		"nil string slice": {
+			input: ([]string)(nil),
+			want:  ([]string)(nil),
+		},
+		"string slice ptr": {
+			input: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
+			want:  convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
+		},
+		"nil string slice ptr": {
+			input: (*[]string)(nil),
+			want:  (*[]string)(nil),
+		},
+		"string map": {
+			input: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"},
+			want:  map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"},
+		},
+		"nil string map": {
+			input: (map[string]string)(nil),
+			want:  (map[string]string)(nil),
+		},
+		"string ptr fields": {
+			input: &stringPtrTest{Usagi: convertStringPtr("ヤハッ！")},
+			want:  &stringPtrTest{Usagi: convertStringPtr("a6ab5728db57954641b2e155adc61f2cbdfc7063")},
+		},
+		"nil string ptr fields": {
+			input: &stringPtrTest{},
+			want:  &stringPtrTest{Usagi: (*string)(nil)},
+		},
+		"string slice fields": {
+			input: &stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
+			want: &stringSliceTest{Usagi: []string{
+				"48a8b33f36a35631f584844686adaba89a6f156a",
+				"ecef3e43f07f7150c089e99d5e1041259b1189d5",
+				"17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
+			}},
+		},
+		"nil string slice fields": {
+			input: &stringSliceTest{},
+			want:  &stringSliceTest{Usagi: ([]string)(nil)},
+		},
+		"string slice ptr fields": {
+			input: &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"})},
+			want: &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{
+				"48a8b33f36a35631f584844686adaba89a6f156a",
+				"ecef3e43f07f7150c089e99d5e1041259b1189d5",
+				"17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
+			})},
+		},
+		"nil string slice ptr fields": {
+			input: &stringSlicePtrTest{},
+			want:  &stringSlicePtrTest{Usagi: (*[]string)(nil)},
+		},
+		"string to string map fields": {
+			input: &stringToStringMapTest{Usagi: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
+			want: &stringToStringMapTest{Usagi: map[string]string{
+				"うさぎ":  "48a8b33f36a35631f584844686adaba89a6f156a",
+				"うさぎ2": "ecef3e43f07f7150c089e99d5e1041259b1189d5",
+				"うさぎ3": "17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
+			}},
+		},
+		"int to string map fields": {
+			input: &intToStringMapTest{Usagi: map[int]string{1: "ハァ？", 2: "ウラ", 3: "フゥン"}},
+			want: &intToStringMapTest{Usagi: map[int]string{
+				1: "48a8b33f36a35631f584844686adaba89a6f156a",
+				2: "ecef3e43f07f7150c089e99d5e1041259b1189d5",
+				3: "17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
+			}},
+		},
+		"struct to string map fields": {
+			input: &structToStringMapTest{Usagi: map[stringTest]string{{Usagi: "ヤハッ！"}: "ハァ？", {Usagi: "ヤハッ！！"}: "ウラ", {Usagi: "ヤハッ！！！"}: "フゥン"}},
+			want: &structToStringMapTest{Usagi: map[stringTest]string{{
+				Usagi: "ヤハッ！"}: "48a8b33f36a35631f584844686adaba89a6f156a",
+				{Usagi: "ヤハッ！！"}:  "ecef3e43f07f7150c089e99d5e1041259b1189d5",
+				{Usagi: "ヤハッ！！！"}: "17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
+			}},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			defer cleanup(t)
+			got, err := Mask(tt.input)
+			assert.Nil(t, err)
+
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
 			}
 		})
 	}
@@ -843,16 +996,16 @@ type benchStruct2 struct {
 	Case2 int `mask:"random1000"`
 	Case3 bool
 	Case4 []string
-	Case5 map[string]string
+	Case5 map[string]string `mask:"filled"`
 }
 type benchStruct1 struct {
 	Case1 string `mask:"name"`
 	Case2 int
 	Case3 bool
-	Case4 []string `mask:"name"`
-	Case5 map[string]string
-	Case6 *benchStruct2   `mask:"struct"`
-	Case7 []*benchStruct2 `mask:"struct"`
+	Case4 []string          `mask:"name"`
+	Case5 map[string]string `mask:"name"`
+	Case6 *benchStruct2     `mask:"struct"`
+	Case7 []*benchStruct2   `mask:"struct"`
 }
 
 func createChiikawa(s string) *benchStruct2 {
@@ -900,9 +1053,11 @@ func BenchmarkMask(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := Mask(&hachiware); err != nil {
+		_, err := Mask(&hachiware)
+		if err != nil {
 			b.Error(err)
 		}
+		// b.Error(v)
 	}
 }
 
@@ -931,8 +1086,10 @@ func BenchmarkGoMasker(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := masker.Struct(&hachiware); err != nil {
+		_, err := masker.Struct(&hachiware)
+		if err != nil {
 			b.Error(err)
 		}
+		// b.Error(v)
 	}
 }

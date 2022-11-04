@@ -1,4 +1,3 @@
-// 日付マスキング：有効なランダムな日付+-
 // 正規表現
 // zero値にする
 package maskgo
@@ -35,22 +34,22 @@ type storeStruct struct {
 }
 
 type (
-	maskStringFunc  func(arg, value string) (string, error)
+	maskStringFunc  func(arg string, value string) (string, error)
 	maskIntFunc     func(arg string, value int) (int, error)
 	maskFloat64Func func(arg string, value float64) (float64, error)
 )
 
 var (
 	typeToStruct      sync.Map
-	maskChar                                    = "*"
-	maskStringFuncMap map[string]maskStringFunc = map[string]maskStringFunc{
+	maskChar          = "*"
+	maskStringFuncMap = map[string]maskStringFunc{
 		MaskTypeFilled: maskFilledString,
 		MaskTypeHash:   maskHashString,
 	}
-	maskIntFuncMap map[string]maskIntFunc = map[string]maskIntFunc{
+	maskIntFuncMap = map[string]maskIntFunc{
 		MaskTypeRandom: maskRandomInt,
 	}
-	maskFloat64FuncMap map[string]maskFloat64Func = map[string]maskFloat64Func{
+	maskFloat64FuncMap = map[string]maskFloat64Func{
 		MaskTypeRandom: maskRandomFloat64,
 	}
 )

@@ -1,3 +1,8 @@
+// 数値マスキング：ランダムな値+-
+// 日付マスキング：有効なランダムな日付+-
+// ハッシュ化
+// 正規表現
+// zero値にする
 package maskgo
 
 import (
@@ -11,8 +16,7 @@ import (
 const tagName = "mask"
 
 const (
-	MaskTypeAll     = "all"
-	maskTypeUnknown = "unknown"
+	MaskTypeFilled = "filled"
 )
 
 type storeStruct struct {
@@ -26,9 +30,7 @@ var (
 	typeToStruct      sync.Map
 	maskChar                                    = "*"
 	maskStringFuncMap map[string]maskStringFunc = map[string]maskStringFunc{
-		MaskTypeAll:     maskAllString,
-		maskTypeUnknown: func(_, value string) (string, error) { return value, nil },
-		"name":          maskNameString,
+		MaskTypeFilled: maskFilledString,
 	}
 )
 
@@ -37,25 +39,19 @@ func RegisterMaskFunc(maskType string, f maskStringFunc) {
 }
 
 func MaskString(tag, value string) (string, error) {
-	var (
-		ok             bool
-		arg            string
-		maskStringFunc maskStringFunc
-	)
 	if tag != "" {
-		for mt, f := range maskStringFuncMap {
+		for mt, maskStringFunc := range maskStringFuncMap {
 			if strings.HasPrefix(tag, mt) {
-				ok = true
-				maskStringFunc = f
-				arg = tag[len(mt):]
-				break
+				return maskStringFunc(tag[len(mt):], value)
 			}
 		}
 	}
-	if !ok {
-		maskStringFunc = maskStringFuncMap[maskTypeUnknown]
-	}
-	return maskStringFunc(arg, value)
+
+	return value, nil
+}
+
+func maskFilledString(arg, value string) (string, error) {
+	return strings.Repeat(maskChar, utf8.RuneCountInString(value)), nil
 }
 
 func Mask(target any) (any, error) {
@@ -70,156 +66,104 @@ func Mask(target any) (any, error) {
 }
 
 func mask(rv reflect.Value, tag string) (reflect.Value, error) {
-	rt := rv.Type()
-	switch rt.Kind() {
+	switch rv.Type().Kind() {
 	case reflect.Ptr:
-		if rv.IsNil() {
-			return rv, nil
-		}
-		rv2 := reflect.ValueOf(rv.Interface())
-		rv3, err := mask(rv2.Elem(), tag)
-		if err != nil {
-			return reflect.Value{}, err
-		}
-		rv2.Elem().Set(rv3)
-		return rv2, nil
+		return maskPtr(rv, tag)
 	case reflect.Struct:
-		if rv.IsZero() {
-			return rv, nil
-		}
-
-		var ss storeStruct
-		if storeValue, ok := typeToStruct.Load(rt.Name()); ok {
-			ss = storeValue.(storeStruct)
-		} else {
-			ss.rv = reflect.New(rt).Elem()
-			ss.structFields = make([]reflect.StructField, rv.NumField())
-			for i := 0; i < rv.NumField(); i++ {
-				ss.structFields[i] = rt.Field(i)
-			}
-
-			typeToStruct.Store(rt.Name(), ss)
-		}
-
-		for i := 0; i < rv.NumField(); i++ {
-			if ss.structFields[i].PkgPath != "" {
-				continue
-			}
-			vTag := ss.structFields[i].Tag.Get(tagName)
-			rvf, err := mask(rv.Field(i), vTag)
-			if err != nil {
-				return reflect.Value{}, err
-			}
-			if rvf.IsValid() {
-				ss.rv.Field(i).Set(rvf)
-			}
-		}
-
-		return ss.rv, nil
+		return maskStruct(rv, tag)
 	case reflect.Slice:
-		if rv.IsZero() {
-			return rv, nil
-		}
-
-		rv2 := reflect.MakeSlice(rt, rv.Len(), rv.Len())
-		if rt.Elem().Kind() == reflect.String {
-			for i, str := range rv.Interface().([]string) {
-				rvf, err := MaskString(tag, str)
-				if err != nil {
-					return reflect.Value{}, err
-				}
-				rv2.Index(i).SetString(rvf)
-			}
-		} else {
-			for i := 0; i < rv.Len(); i++ {
-				rf, err := mask(rv.Index(i), tag)
-				if err != nil {
-					return reflect.Value{}, err
-				}
-				rv2.Index(i).Set(rf)
-			}
-		}
-
-		return rv2, nil
+		return maskSlice(rv, tag)
 	case reflect.String:
-		sp, err := MaskString(tag, rv.String())
-		if err != nil {
-			return reflect.Value{}, err
-		}
-		rv2 := reflect.ValueOf(&sp)
-		return rv2.Elem(), nil
+		return maskString(rv, tag)
 	default:
 		return rv, nil
 	}
 }
 
-func maskAllString(arg, value string) (string, error) {
-	return strings.Repeat(maskChar, utf8.RuneCountInString(value)), nil
-}
-
-func maskNameString(arg, value string) (string, error) {
-	l := len([]rune(value))
-
-	if l == 0 {
-		return "", nil
+func maskPtr(rv reflect.Value, tag string) (reflect.Value, error) {
+	if rv.IsNil() {
+		return rv, nil
 	}
 
-	if strs := strings.Split(value, " "); len(strs) > 1 {
-		tmp := make([]string, len(strs))
-		for idx, str := range strs {
-			tmp[idx], _ = maskNameString(arg, str)
+	rv2 := reflect.ValueOf(rv.Interface())
+	rv3, err := mask(rv2.Elem(), tag)
+	if err != nil {
+		return reflect.Value{}, err
+	}
+	rv2.Elem().Set(rv3)
+
+	return rv2, nil
+}
+
+func maskStruct(rv reflect.Value, tag string) (reflect.Value, error) {
+	if rv.IsZero() {
+		return rv, nil
+	}
+
+	var ss storeStruct
+	rt := rv.Type()
+	if storeValue, ok := typeToStruct.Load(rt.Name()); ok {
+		ss = storeValue.(storeStruct)
+	} else {
+		ss.rv = reflect.New(rt).Elem()
+		ss.structFields = make([]reflect.StructField, rv.NumField())
+		for i := 0; i < rv.NumField(); i++ {
+			ss.structFields[i] = rt.Field(i)
 		}
-		return strings.Join(tmp, " "), nil
+
+		typeToStruct.Store(rt.Name(), ss)
 	}
 
-	if l == 2 || l == 3 {
-		return overlay(value, strLoop(maskChar, len("**")), 1, 2), nil
+	for i := 0; i < rv.NumField(); i++ {
+		if ss.structFields[i].PkgPath != "" {
+			continue
+		}
+		vTag := ss.structFields[i].Tag.Get(tagName)
+		rvf, err := mask(rv.Field(i), vTag)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		if rvf.IsValid() {
+			ss.rv.Field(i).Set(rvf)
+		}
 	}
 
-	if l > 3 {
-		return overlay(value, strLoop(maskChar, len("**")), 1, 3), nil
-	}
-
-	return strLoop(maskChar, len("**")), nil
+	return ss.rv, nil
 }
 
-func strLoop(str string, length int) string {
-	var mask string
-	for i := 1; i <= length; i++ {
-		mask += str
+func maskSlice(rv reflect.Value, tag string) (reflect.Value, error) {
+	if rv.IsZero() {
+		return rv, nil
 	}
-	return mask
+
+	rv2 := reflect.MakeSlice(rv.Type(), rv.Len(), rv.Len())
+	switch rv.Type().Elem().Kind() {
+	case reflect.String:
+		for i, str := range rv.Interface().([]string) {
+			rvf, err := MaskString(tag, str)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			rv2.Index(i).SetString(rvf)
+		}
+	default:
+		for i := 0; i < rv.Len(); i++ {
+			rf, err := mask(rv.Index(i), tag)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			rv2.Index(i).Set(rf)
+		}
+	}
+
+	return rv2, nil
 }
 
-func overlay(str string, overlay string, start int, end int) (overlayed string) {
-	r := []rune(str)
-	l := len([]rune(r))
-
-	if l == 0 {
-		return ""
+func maskString(rv reflect.Value, tag string) (reflect.Value, error) {
+	sp, err := MaskString(tag, rv.String())
+	if err != nil {
+		return reflect.Value{}, err
 	}
 
-	if start < 0 {
-		start = 0
-	}
-	if start > l {
-		start = l
-	}
-	if end < 0 {
-		end = 0
-	}
-	if end > l {
-		end = l
-	}
-	if start > end {
-		tmp := start
-		start = end
-		end = tmp
-	}
-
-	overlayed = ""
-	overlayed += string(r[:start])
-	overlayed += overlay
-	overlayed += string(r[end:])
-	return overlayed
+	return reflect.ValueOf(&sp).Elem(), nil
 }

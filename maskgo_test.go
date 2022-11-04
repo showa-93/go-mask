@@ -35,10 +35,10 @@ func TestMask(t *testing.T) {
 }
 
 type benchStruct2 struct {
-	Case1 string `mask:"name"`
+	Case1 string
 	Case2 int
 	Case3 bool
-	Case4 []string `mask:"name"`
+	Case4 []string
 	Case5 map[string]string
 }
 type benchStruct1 struct {

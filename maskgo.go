@@ -6,6 +6,7 @@ package maskgo
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"math"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -34,8 +35,9 @@ type storeStruct struct {
 }
 
 type (
-	maskStringFunc func(arg, value string) (string, error)
-	maskIntFunc    func(arg string, value int) (int, error)
+	maskStringFunc  func(arg, value string) (string, error)
+	maskIntFunc     func(arg string, value int) (int, error)
+	maskFloat64Func func(arg string, value float64) (float64, error)
 )
 
 var (
@@ -47,6 +49,9 @@ var (
 	}
 	maskIntFuncMap map[string]maskIntFunc = map[string]maskIntFunc{
 		MaskTypeRandom: maskRandomInt,
+	}
+	maskFloat64FuncMap map[string]maskFloat64Func = map[string]maskFloat64Func{
+		MaskTypeRandom: maskRandomFloat64,
 	}
 )
 
@@ -96,6 +101,41 @@ func maskRandomInt(arg string, value int) (int, error) {
 	return rand.Intn(n), nil
 }
 
+func MaskFloat64(tag string, value float64) (float64, error) {
+	if tag != "" {
+		for mt, maskFloat64Func := range maskFloat64FuncMap {
+			if strings.HasPrefix(tag, mt) {
+				return maskFloat64Func(tag[len(mt):], value)
+			}
+		}
+	}
+
+	return value, nil
+}
+
+func maskRandomFloat64(arg string, value float64) (float64, error) {
+	var (
+		i, d int
+		err  error
+	)
+	digits := strings.Split(arg, ".")
+	if len(digits) > 0 {
+		if i, err = strconv.Atoi(digits[0]); err != nil {
+			return 0, err
+		}
+	}
+	if len(digits) == 2 {
+		if d, err = strconv.Atoi(digits[1]); err != nil {
+			return 0, err
+		}
+	}
+
+	dd := math.Pow10(d)
+	x := float64(int(rand.Float64() * math.Pow10(i) * dd))
+
+	return x / dd, nil
+}
+
 func Mask(target any) (any, error) {
 	if target == nil {
 		return target, nil
@@ -120,6 +160,8 @@ func mask(rv reflect.Value, tag string) (reflect.Value, error) {
 		return maskString(rv, tag)
 	case reflect.Int:
 		return maskInt(rv, tag)
+	case reflect.Float64:
+		return maskfloat64(rv, tag)
 	default:
 		return rv, nil
 	}
@@ -228,4 +270,13 @@ func maskInt(rv reflect.Value, tag string) (reflect.Value, error) {
 	}
 
 	return reflect.ValueOf(&ip).Elem(), nil
+}
+
+func maskfloat64(rv reflect.Value, tag string) (reflect.Value, error) {
+	fp, err := MaskFloat64(tag, rv.Interface().(float64))
+	if err != nil {
+		return reflect.Value{}, err
+	}
+
+	return reflect.ValueOf(&fp).Elem(), nil
 }

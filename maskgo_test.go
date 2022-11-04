@@ -37,6 +37,18 @@ func TestMask(t *testing.T) {
 	type intSlicePtrTest struct {
 		Usagi *[]int
 	}
+	type float64Test struct {
+		Usagi float64
+	}
+	type float64PtrTest struct {
+		Usagi *float64
+	}
+	type float64SliceTest struct {
+		Usagi []float64
+	}
+	type float64SlicePtrTest struct {
+		Usagi *[]float64
+	}
 	type boolTest struct {
 		Usagi bool
 	}
@@ -182,6 +194,70 @@ func TestMask(t *testing.T) {
 		"nil int slice ptr fields": {
 			input: &intSlicePtrTest{},
 			want:  &intSlicePtrTest{Usagi: (*[]int)(nil)},
+		},
+		"float64": {
+			input: 20190122,
+			want:  20190122,
+		},
+		"zero float64": {
+			input: 0,
+			want:  0,
+		},
+		"float64 ptr": {
+			input: convertFloat64Ptr(20190122),
+			want:  convertFloat64Ptr(20190122),
+		},
+		"nil float64 ptr": {
+			input: (*float64)(nil),
+			want:  (*float64)(nil),
+		},
+		"float64 slice": {
+			input: []float64{20190122, 20200501, 20200501},
+			want:  []float64{20190122, 20200501, 20200501},
+		},
+		"nil float64 slice": {
+			input: ([]float64)(nil),
+			want:  ([]float64)(nil),
+		},
+		"float64 slice ptr": {
+			input: convertFloat64SlicePtr([]float64{20190122, 20200501, 20200501}),
+			want:  convertFloat64SlicePtr([]float64{20190122, 20200501, 20200501}),
+		},
+		"nil float64 slice ptr": {
+			input: (*[]float64)(nil),
+			want:  (*[]float64)(nil),
+		},
+		"float64 fields": {
+			input: &float64Test{Usagi: 20190122},
+			want:  &float64Test{Usagi: 20190122},
+		},
+		"zero float64 fields": {
+			input: &float64Test{},
+			want:  &float64Test{Usagi: 0},
+		},
+		"float64 ptr fields": {
+			input: &float64PtrTest{Usagi: convertFloat64Ptr(20190122)},
+			want:  &float64PtrTest{Usagi: convertFloat64Ptr(20190122)},
+		},
+		"nil float64 ptr fields": {
+			input: &float64PtrTest{},
+			want:  &float64PtrTest{Usagi: nil},
+		},
+		"float64 slice fields": {
+			input: &float64SliceTest{Usagi: []float64{20190122, 20200501, 20200501}},
+			want:  &float64SliceTest{Usagi: []float64{20190122, 20200501, 20200501}},
+		},
+		"nil float64 slice fields": {
+			input: &float64SliceTest{},
+			want:  &float64SliceTest{Usagi: ([]float64)(nil)},
+		},
+		"float64 slice ptr fields": {
+			input: &float64SlicePtrTest{Usagi: convertFloat64SlicePtr([]float64{20190122, 20200501, 20200501})},
+			want:  &float64SlicePtrTest{Usagi: convertFloat64SlicePtr([]float64{20190122, 20200501, 20200501})},
+		},
+		"nil float64 slice ptr fields": {
+			input: &float64SlicePtrTest{},
+			want:  &float64SlicePtrTest{Usagi: (*[]float64)(nil)},
 		},
 		"bool fields": {
 			input: &boolTest{Usagi: true},
@@ -503,6 +579,47 @@ func TestMaskInt(t *testing.T) {
 	}
 }
 
+func TestMaskFloat64(t *testing.T) {
+	tests := map[string]struct {
+		tag   string
+		input float64
+		want  float64
+	}{
+		"no tag": {
+			tag:   "",
+			input: 20190122,
+			want:  20190122,
+		},
+		"undefined tag": {
+			tag:   "usagi!!",
+			input: 20190122,
+			want:  20190122,
+		},
+		"random5.4": {
+			tag:   "random5.4",
+			input: 20190122,
+			want:  96011.8989,
+		},
+		"random1.0": {
+			tag:   "random1.0",
+			input: 20190122,
+			want:  9.0,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			rand.Seed(rand.NewSource(1).Int63())
+			defer cleanup(t)
+			got, err := MaskFloat64(tt.tag, tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Error(diff)
+			}
+		})
+	}
+}
+
 func TestMaskRandom(t *testing.T) {
 	type intTest struct {
 		Usagi int `mask:"random1000"`
@@ -515,6 +632,18 @@ func TestMaskRandom(t *testing.T) {
 	}
 	type intSlicePtrTest struct {
 		Usagi *[]int `mask:"random1000"`
+	}
+	type float64Test struct {
+		Usagi float64 `mask:"random5.4"`
+	}
+	type float64PtrTest struct {
+		Usagi *float64 `mask:"random5.4"`
+	}
+	type float64SliceTest struct {
+		Usagi []float64 `mask:"random5.4"`
+	}
+	type float64SlicePtrTest struct {
+		Usagi *[]float64 `mask:"random5.4"`
 	}
 
 	tests := map[string]struct {
@@ -552,6 +681,38 @@ func TestMaskRandom(t *testing.T) {
 		"nil int slice ptr fields": {
 			input: &intSlicePtrTest{},
 			want:  &intSlicePtrTest{Usagi: (*[]int)(nil)},
+		},
+		"float64 fields": {
+			input: &float64Test{Usagi: 20190122},
+			want:  &float64Test{Usagi: 96011.8989},
+		},
+		"zero float64 fields": {
+			input: &float64Test{},
+			want:  &float64Test{Usagi: 0},
+		},
+		"float64 ptr fields": {
+			input: &float64PtrTest{Usagi: convertFloat64Ptr(20190122)},
+			want:  &float64PtrTest{Usagi: convertFloat64Ptr(96011.8989)},
+		},
+		"nil float64 ptr fields": {
+			input: &float64PtrTest{},
+			want:  &float64PtrTest{Usagi: nil},
+		},
+		"float64 slice fields": {
+			input: &float64SliceTest{Usagi: []float64{20190122, 20200501, 20200501}},
+			want:  &float64SliceTest{Usagi: []float64{96011.8989, 90863.3149, 32310.0201}},
+		},
+		"nil float64 slice fields": {
+			input: &float64SliceTest{},
+			want:  &float64SliceTest{Usagi: ([]float64)(nil)},
+		},
+		"float64 slice ptr fields": {
+			input: &float64SlicePtrTest{Usagi: convertFloat64SlicePtr([]float64{20190122, 20200501, 20200501})},
+			want:  &float64SlicePtrTest{Usagi: convertFloat64SlicePtr([]float64{96011.8989, 90863.3149, 32310.0201})},
+		},
+		"nil float64 slice ptr fields": {
+			input: &float64SlicePtrTest{},
+			want:  &float64SlicePtrTest{Usagi: (*[]float64)(nil)},
 		},
 	}
 
@@ -617,6 +778,12 @@ func convertIntPtr(i int) *int {
 }
 func convertIntSlicePtr(i []int) *[]int {
 	return &i
+}
+func convertFloat64Ptr(f float64) *float64 {
+	return &f
+}
+func convertFloat64SlicePtr(f []float64) *[]float64 {
+	return &f
 }
 func convertBoolPtr(v bool) *bool {
 	return &v

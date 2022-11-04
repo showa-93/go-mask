@@ -79,15 +79,6 @@ func MaskString(tag, value string) (string, error) {
 	return value, nil
 }
 
-func maskFilledString(arg, value string) (string, error) {
-	return strings.Repeat(maskChar, utf8.RuneCountInString(value)), nil
-}
-
-func maskHashString(arg, value string) (string, error) {
-	hash := sha1.Sum(([]byte)(value))
-	return hex.EncodeToString(hash[:]), nil
-}
-
 func MaskInt(tag string, value int) (int, error) {
 	if tag != "" {
 		for mt, maskIntFunc := range maskIntFuncMap {
@@ -100,15 +91,6 @@ func MaskInt(tag string, value int) (int, error) {
 	return value, nil
 }
 
-func maskRandomInt(arg string, value int) (int, error) {
-	n, err := strconv.Atoi(arg)
-	if err != nil {
-		return 0, err
-	}
-
-	return rand.Intn(n), nil
-}
-
 func MaskFloat64(tag string, value float64) (float64, error) {
 	if tag != "" {
 		for mt, maskFloat64Func := range maskFloat64FuncMap {
@@ -119,6 +101,24 @@ func MaskFloat64(tag string, value float64) (float64, error) {
 	}
 
 	return value, nil
+}
+
+func maskFilledString(arg, value string) (string, error) {
+	return strings.Repeat(maskChar, utf8.RuneCountInString(value)), nil
+}
+
+func maskHashString(arg, value string) (string, error) {
+	hash := sha1.Sum(([]byte)(value))
+	return hex.EncodeToString(hash[:]), nil
+}
+
+func maskRandomInt(arg string, value int) (int, error) {
+	n, err := strconv.Atoi(arg)
+	if err != nil {
+		return 0, err
+	}
+
+	return rand.Intn(n), nil
 }
 
 func maskRandomFloat64(arg string, value float64) (float64, error) {

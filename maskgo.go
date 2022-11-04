@@ -249,6 +249,14 @@ func maskSlice(rv reflect.Value, tag string) (reflect.Value, error) {
 			}
 			rv2.Index(i).SetInt(int64(rvf))
 		}
+	case reflect.Float64:
+		for i, v := range rv.Interface().([]float64) {
+			rvf, err := MaskFloat64(tag, v)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			rv2.Index(i).SetFloat(rvf)
+		}
 	default:
 		for i := 0; i < rv.Len(); i++ {
 			rf, err := mask(rv.Index(i), tag)

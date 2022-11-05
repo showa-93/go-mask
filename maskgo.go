@@ -40,8 +40,8 @@ type (
 )
 
 var (
-	typeToStruct      sync.Map
 	maskChar          = "*"
+	typeToStructMap   sync.Map
 	maskStringFuncMap = map[string]maskStringFunc{
 		MaskTypeFilled: maskFilledString,
 		MaskTypeHash:   maskHashString,
@@ -198,7 +198,7 @@ func maskStruct(rv reflect.Value, tag string) (reflect.Value, error) {
 
 	var ss storeStruct
 	rt := rv.Type()
-	if storeValue, ok := typeToStruct.Load(rt.String()); ok {
+	if storeValue, ok := typeToStructMap.Load(rt.String()); ok {
 		ss = storeValue.(storeStruct)
 	} else {
 		ss.rv = reflect.New(rt).Elem()
@@ -207,7 +207,7 @@ func maskStruct(rv reflect.Value, tag string) (reflect.Value, error) {
 			ss.structFields[i] = rt.Field(i)
 		}
 
-		typeToStruct.Store(rt.String(), ss)
+		typeToStructMap.Store(rt.String(), ss)
 	}
 
 	for i := 0; i < rv.NumField(); i++ {

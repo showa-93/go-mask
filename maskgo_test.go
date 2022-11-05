@@ -985,8 +985,8 @@ func convertBoolPtr(v bool) *bool {
 
 func cleanup(t *testing.T) {
 	t.Helper()
-	typeToStruct.Range(func(key, _ any) bool {
-		typeToStruct.Delete(key)
+	typeToStructMap.Range(func(key, _ any) bool {
+		typeToStructMap.Delete(key)
 		return false
 	})
 }

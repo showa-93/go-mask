@@ -1,4 +1,3 @@
-// zero値にする
 package maskgo
 
 import (
@@ -22,6 +21,7 @@ const (
 	MaskTypeRandom = "random"
 	MaskTypeHash   = "hash"
 	MaskTypeRegExp = "regexp"
+	MaskTypeHide   = "hide"
 )
 
 type storeStruct struct {
@@ -66,6 +66,10 @@ func RegisterMaskFloat64Func(maskType string, f maskFloat64Func) {
 
 func MaskString(tag, value string) (string, error) {
 	if tag != "" {
+		if tag == MaskTypeHide {
+			return "", nil
+		}
+
 		for mt, maskStringFunc := range maskStringFuncMap {
 			if strings.HasPrefix(tag, mt) {
 				return maskStringFunc(tag[len(mt):], value)
@@ -78,6 +82,10 @@ func MaskString(tag, value string) (string, error) {
 
 func MaskInt(tag string, value int) (int, error) {
 	if tag != "" {
+		if tag == MaskTypeHide {
+			return 0, nil
+		}
+
 		for mt, maskIntFunc := range maskIntFuncMap {
 			if strings.HasPrefix(tag, mt) {
 				return maskIntFunc(tag[len(mt):], value)
@@ -90,6 +98,10 @@ func MaskInt(tag string, value int) (int, error) {
 
 func MaskFloat64(tag string, value float64) (float64, error) {
 	if tag != "" {
+		if tag == MaskTypeHide {
+			return 0, nil
+		}
+
 		for mt, maskFloat64Func := range maskFloat64FuncMap {
 			if strings.HasPrefix(tag, mt) {
 				return maskFloat64Func(tag[len(mt):], value)
@@ -181,6 +193,9 @@ func Mask(target any) (any, error) {
 }
 
 func mask(rv reflect.Value, tag string) (reflect.Value, error) {
+	if strings.HasPrefix(tag, MaskTypeHide) {
+		return reflect.Zero(rv.Type()), nil
+	}
 	switch rv.Type().Kind() {
 	case reflect.Ptr:
 		return maskPtr(rv, tag)
@@ -203,7 +218,7 @@ func mask(rv reflect.Value, tag string) (reflect.Value, error) {
 
 func maskPtr(rv reflect.Value, tag string) (reflect.Value, error) {
 	if rv.IsNil() {
-		return rv, nil
+		return reflect.Zero(rv.Type()), nil
 	}
 
 	rv2 := reflect.New(rv.Type().Elem())
@@ -218,7 +233,7 @@ func maskPtr(rv reflect.Value, tag string) (reflect.Value, error) {
 
 func maskStruct(rv reflect.Value, tag string) (reflect.Value, error) {
 	if rv.IsZero() {
-		return rv, nil
+		return reflect.Zero(rv.Type()), nil
 	}
 
 	var ss storeStruct
@@ -254,7 +269,7 @@ func maskStruct(rv reflect.Value, tag string) (reflect.Value, error) {
 
 func maskSlice(rv reflect.Value, tag string) (reflect.Value, error) {
 	if rv.IsZero() {
-		return rv, nil
+		return reflect.Zero(rv.Type()), nil
 	}
 
 	rv2 := reflect.MakeSlice(rv.Type(), rv.Len(), rv.Len())
@@ -298,7 +313,7 @@ func maskSlice(rv reflect.Value, tag string) (reflect.Value, error) {
 
 func maskMap(rv reflect.Value, tag string) (reflect.Value, error) {
 	if rv.IsNil() {
-		return rv, nil
+		return reflect.Zero(rv.Type()), nil
 	}
 
 	switch rv.Type().Key().Kind() {
@@ -403,7 +418,7 @@ func maskString(rv reflect.Value, tag string) (reflect.Value, error) {
 }
 
 func maskInt(rv reflect.Value, tag string) (reflect.Value, error) {
-	ip, err := MaskInt(tag, rv.Interface().(int))
+	ip, err := MaskInt(tag, int(rv.Int()))
 	if err != nil {
 		return reflect.Value{}, err
 	}
@@ -412,7 +427,7 @@ func maskInt(rv reflect.Value, tag string) (reflect.Value, error) {
 }
 
 func maskfloat64(rv reflect.Value, tag string) (reflect.Value, error) {
-	fp, err := MaskFloat64(tag, rv.Interface().(float64))
+	fp, err := MaskFloat64(tag, rv.Float())
 	if err != nil {
 		return reflect.Value{}, err
 	}

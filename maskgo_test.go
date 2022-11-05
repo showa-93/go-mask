@@ -427,6 +427,11 @@ func TestMaskString(t *testing.T) {
 			input: "ヤハッ！ヤハッ！",
 			want:  "**ッ！ヤハッ！",
 		},
+		"hide": {
+			tag:   MaskTypeHide,
+			input: "ヤハッ！",
+			want:  "",
+		},
 	}
 
 	for name, tt := range tests {
@@ -472,6 +477,11 @@ func TestMaskInt(t *testing.T) {
 			tag:   MaskTypeRandom + "1000",
 			input: 20190122,
 			want:  829,
+		},
+		"hide": {
+			tag:   "hide",
+			input: 0,
+			want:  0,
 		},
 	}
 
@@ -533,6 +543,11 @@ func TestMaskFloat64(t *testing.T) {
 			tag:   MaskTypeRandom + "1",
 			input: 20190122,
 			want:  9.0,
+		},
+		"hide": {
+			tag:   "hide",
+			input: 20190122,
+			want:  0,
 		},
 	}
 
@@ -965,6 +980,126 @@ func TestMaskRegExp(t *testing.T) {
 	}
 }
 
+func TestMaskHide(t *testing.T) {
+	type stringTest struct {
+		Usagi string `mask:"hide"`
+	}
+	type stringPtrTest struct {
+		Usagi *string `mask:"hide"`
+	}
+	type stringSliceTest struct {
+		Usagi []string `mask:"hide"`
+	}
+	type stringSlicePtrTest struct {
+		Usagi *[]string `mask:"hide"`
+	}
+	type intTest struct {
+		Usagi int `mask:"hide"`
+	}
+	type float64Test struct {
+		Usagi float64 `mask:"hide"`
+	}
+	type boolTest struct {
+		Usagi bool `mask:"hide"`
+	}
+	type mapStringToStringTest struct {
+		Usagi map[string]string `mask:"hide"`
+	}
+	type structTest struct {
+		StringTest stringTest `mask:"hide"`
+	}
+
+	tests := map[string]struct {
+		input any
+		want  any
+	}{
+		"string fields": {
+			input: &stringTest{Usagi: "ヤハッ！"},
+			want:  &stringTest{Usagi: ""},
+		},
+		"string empty fields": {
+			input: &stringTest{},
+			want:  &stringTest{Usagi: ""},
+		},
+		"string ptr fields": {
+			input: &stringPtrTest{Usagi: convertStringPtr("ヤハッ！")},
+			want:  &stringPtrTest{},
+		},
+		"nil string ptr fields": {
+			input: &stringPtrTest{},
+			want:  &stringPtrTest{Usagi: nil},
+		},
+		"string slice fields": {
+			input: &stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
+			want:  &stringSliceTest{},
+		},
+		"nil string slice fields": {
+			input: &stringSliceTest{},
+			want:  &stringSliceTest{Usagi: ([]string)(nil)},
+		},
+		"string slice ptr fields": {
+			input: &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"})},
+			want:  &stringSlicePtrTest{},
+		},
+		"nil string slice ptr fields": {
+			input: &stringSlicePtrTest{},
+			want:  &stringSlicePtrTest{Usagi: (*[]string)(nil)},
+		},
+		"int fields": {
+			input: &intTest{Usagi: 20190122},
+			want:  &intTest{Usagi: 0},
+		},
+		"zero int fields": {
+			input: &intTest{},
+			want:  &intTest{Usagi: 0},
+		},
+		"float64 fields": {
+			input: &float64Test{Usagi: 20190122},
+			want:  &float64Test{Usagi: 0},
+		},
+		"zero float64 fields": {
+			input: &float64Test{},
+			want:  &float64Test{Usagi: 0},
+		},
+		"bool fields": {
+			input: &boolTest{Usagi: true},
+			want:  &boolTest{Usagi: false},
+		},
+		"zero bool fields": {
+			input: &boolTest{},
+			want:  &boolTest{},
+		},
+		"map string to string fields": {
+			input: &mapStringToStringTest{Usagi: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
+			want:  &mapStringToStringTest{},
+		},
+		"nil map string to string fields": {
+			input: &mapStringToStringTest{},
+			want:  &mapStringToStringTest{},
+		},
+		"struct fields": {
+			input: &structTest{
+				StringTest: stringTest{Usagi: "ヤハッ！"},
+			},
+			want: &structTest{
+				StringTest: stringTest{},
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			defer cleanup(t)
+			rand.Seed(rand.NewSource(1).Int63())
+			got, err := Mask(tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
+			}
+		})
+	}
+}
+
 func allowUnexported(v any) cmp.Options {
 	var options cmp.Options
 	if !reflect.ValueOf(v).IsValid() {
@@ -1036,15 +1171,15 @@ type benchStruct2 struct {
 	Case5 map[string]string
 }
 type benchStruct1 struct {
-	Case1  string `mask:"regexp(はち)*"`
-	Case11 string `mask:"name"`
+	Case1  string
+	Case11 string
 	Case2  int
 	Case3  bool
-	Case4  []string `mask:"filled"`
-	Case44 []string `mask:"name"`
+	Case4  []string
+	Case44 []string
 	Case5  map[string]string
 	Case6  *benchStruct2   `mask:"struct"`
-	Case7  []*benchStruct2 `mask:"struct"`
+	Case7  []*benchStruct2 `mask:"hide"`
 }
 
 func createChiikawa(s string) *benchStruct2 {

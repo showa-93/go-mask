@@ -176,8 +176,8 @@ func maskPtr(rv reflect.Value, tag string) (reflect.Value, error) {
 		return rv, nil
 	}
 
-	rv2 := reflect.ValueOf(rv.Interface())
-	rv3, err := mask(rv2.Elem(), tag)
+	rv2 := reflect.New(rv.Type().Elem())
+	rv3, err := mask(rv.Elem(), tag)
 	if err != nil {
 		return reflect.Value{}, err
 	}

@@ -10,15 +10,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 	"unicode/utf8"
 
 	"github.com/goccy/go-reflect"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 const tagName = "mask"
 

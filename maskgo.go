@@ -1,4 +1,3 @@
-// 正規表現
 // zero値にする
 package maskgo
 
@@ -7,6 +6,7 @@ import (
 	"encoding/hex"
 	"math"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,6 +21,7 @@ const (
 	MaskTypeFilled = "filled"
 	MaskTypeRandom = "random"
 	MaskTypeHash   = "hash"
+	MaskTypeRegExp = "regexp"
 )
 
 type storeStruct struct {
@@ -37,9 +38,11 @@ type (
 var (
 	maskChar          = "*"
 	typeToStructMap   sync.Map
+	regMap            sync.Map
 	maskStringFuncMap = map[string]maskStringFunc{
 		MaskTypeFilled: maskFilledString,
 		MaskTypeHash:   maskHashString,
+		MaskTypeRegExp: maskRegExp,
 	}
 	maskIntFuncMap = map[string]maskIntFunc{
 		MaskTypeRandom: maskRandomInt,
@@ -104,6 +107,33 @@ func maskFilledString(arg, value string) (string, error) {
 func maskHashString(arg, value string) (string, error) {
 	hash := sha1.Sum(([]byte)(value))
 	return hex.EncodeToString(hash[:]), nil
+}
+
+func maskRegExp(arg, value string) (string, error) {
+	var (
+		reg *regexp.Regexp
+		err error
+	)
+	if storeReg, ok := regMap.Load(arg); ok {
+		reg = storeReg.(*regexp.Regexp)
+	} else {
+		reg, err = regexp.Compile(arg)
+		if err != nil {
+			return "", err
+		}
+		regMap.Store(arg, reg)
+	}
+
+	indexes := reg.FindStringSubmatchIndex(value)
+	if len(indexes) >= 4 && indexes[2] >= 0 && indexes[3] >= 0 {
+		var sb strings.Builder
+		sb.WriteString(value[:indexes[2]])
+		sb.WriteString(strings.Repeat(maskChar, utf8.RuneCountInString(value[indexes[2]:indexes[3]])))
+		sb.WriteString(value[indexes[3]:])
+		return sb.String(), nil
+	}
+
+	return value, nil
 }
 
 func maskRandomInt(arg string, value int) (int, error) {

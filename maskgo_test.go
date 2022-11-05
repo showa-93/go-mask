@@ -422,6 +422,11 @@ func TestMaskString(t *testing.T) {
 			input: "ヤハッ！",
 			want:  "****",
 		},
+		"regexp(ヤハ)*": {
+			tag:   MaskTypeRegExp + "(ヤハ)*",
+			input: "ヤハッ！ヤハッ！",
+			want:  "**ッ！ヤハッ！",
+		},
 	}
 
 	for name, tt := range tests {
@@ -912,6 +917,38 @@ func TestMaskRandom(t *testing.T) {
 		"nil float64 slice ptr fields": {
 			input: &float64SlicePtrTest{},
 			want:  &float64SlicePtrTest{Usagi: (*[]float64)(nil)},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			defer cleanup(t)
+			rand.Seed(rand.NewSource(1).Int63())
+			got, err := Mask(tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
+			}
+		})
+	}
+}
+
+func TestMaskRegExp(t *testing.T) {
+	type stringTest struct {
+		Usagi string `mask:"regexp(ヤハ)*"`
+	}
+
+	tests := map[string]struct {
+		input any
+		want  any
+	}{
+		"regexp(ヤハ)*": {
+			input: stringTest{Usagi: "ヤハッ！ヤハッ！"},
+			want:  stringTest{Usagi: "**ッ！ヤハッ！"},
+		},
+		"not regexp(ヤハ)*": {
+			input: stringTest{Usagi: "ウラァ"},
+			want:  stringTest{Usagi: "ウラァ"},
 		},
 	}
 

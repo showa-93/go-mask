@@ -357,6 +357,14 @@ func maskAnyKeykMap(rv reflect.Value, tag string) (reflect.Value, error) {
 			}
 			rv2.SetMapIndex(key, reflect.ValueOf(rvf))
 		}
+	default:
+		for _, key := range rv.MapKeys() {
+			rf, err := mask(rv.MapIndex(key), tag)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			rv2.SetMapIndex(key, rf)
+		}
 	}
 
 	return rv2, nil

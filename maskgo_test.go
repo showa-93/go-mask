@@ -993,19 +993,21 @@ func cleanup(t *testing.T) {
 
 type benchStruct2 struct {
 	Case1 string
-	Case2 int `mask:"random1000"`
-	Case3 bool
-	Case4 []string
-	Case5 map[string]string `mask:"filled"`
-}
-type benchStruct1 struct {
-	Case1 string `mask:"name"`
 	Case2 int
 	Case3 bool
-	Case4 []string          `mask:"name"`
-	Case5 map[string]string `mask:"name"`
-	Case6 *benchStruct2     `mask:"struct"`
-	Case7 []*benchStruct2   `mask:"struct"`
+	Case4 []string
+	Case5 map[string]string
+}
+type benchStruct1 struct {
+	Case1  string `mask:"regexp(はち)*"`
+	Case11 string `mask:"name"`
+	Case2  int
+	Case3  bool
+	Case4  []string `mask:"filled"`
+	Case44 []string `mask:"name"`
+	Case5  map[string]string
+	Case6  *benchStruct2   `mask:"struct"`
+	Case7  []*benchStruct2 `mask:"struct"`
 }
 
 func createChiikawa(s string) *benchStruct2 {
@@ -1030,10 +1032,17 @@ func createChiikawa(s string) *benchStruct2 {
 
 func BenchmarkMask(b *testing.B) {
 	hachiware := benchStruct1{
-		Case1: "はちわれ",
-		Case2: 20200501,
-		Case3: true,
+		Case1:  "はちわれ",
+		Case11: "はちわれ",
+		Case2:  20200501,
+		Case3:  true,
 		Case4: []string{
+			"もしかして",
+			"ベンチマーク",
+			"とってる…",
+			"ってコト！？",
+		},
+		Case44: []string{
 			"もしかして",
 			"ベンチマーク",
 			"とってる…",
@@ -1057,16 +1066,22 @@ func BenchmarkMask(b *testing.B) {
 		if err != nil {
 			b.Error(err)
 		}
-		// b.Error(v)
 	}
 }
 
 func BenchmarkGoMasker(b *testing.B) {
 	hachiware := benchStruct1{
-		Case1: "はちわれ",
-		Case2: 20200501,
-		Case3: true,
+		Case1:  "はちわれ",
+		Case11: "はちわれ",
+		Case2:  20200501,
+		Case3:  true,
 		Case4: []string{
+			"もしかして",
+			"ベンチマーク",
+			"とってる…",
+			"ってコト！？",
+		},
+		Case44: []string{
 			"もしかして",
 			"ベンチマーク",
 			"とってる…",
@@ -1090,6 +1105,5 @@ func BenchmarkGoMasker(b *testing.B) {
 		if err != nil {
 			b.Error(err)
 		}
-		// b.Error(v)
 	}
 }

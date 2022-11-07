@@ -207,9 +207,9 @@ func mask(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error)
 		return maskMap(rv, tag, mp)
 	case reflect.String:
 		return maskString(rv, tag, mp)
-	case reflect.Int:
+	case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64:
 		return maskInt(rv, tag, mp)
-	case reflect.Float64:
+	case reflect.Float32, reflect.Float64:
 		return maskfloat64(rv, tag, mp)
 	default:
 		if mp.IsValid() {
@@ -465,6 +465,10 @@ func maskInt(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, err
 		return mp, nil
 	}
 
+	if rv.Type().Kind() != reflect.Int {
+		return reflect.ValueOf(&ip).Elem().Convert(rv.Type()), nil
+	}
+
 	return reflect.ValueOf(&ip).Elem(), nil
 }
 
@@ -476,6 +480,10 @@ func maskfloat64(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value,
 	if mp.IsValid() {
 		mp.SetFloat(fp)
 		return mp, nil
+	}
+
+	if rv.Type().Kind() != reflect.Float64 {
+		return reflect.ValueOf(&fp).Elem().Convert(rv.Type()), nil
 	}
 
 	return reflect.ValueOf(&fp).Elem(), nil

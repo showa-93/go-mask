@@ -376,7 +376,9 @@ func TestMask(t *testing.T) {
 				},
 			},
 			want: &structSliceTest{
-				SliceTest: []stringTest{{Usagi: "ハァ？"}, {Usagi: "ウラ"}, {Usagi: "フゥン"}},
+				SliceTest: []stringTest{{
+					Usagi: "ハァ？"}, {Usagi: "ウラ"}, {Usagi: "フゥン"},
+				},
 			},
 		},
 		"nil struct slice fields": {
@@ -843,11 +845,23 @@ func TestMaskRandom(t *testing.T) {
 	type intTest struct {
 		Usagi int `mask:"random1000"`
 	}
+	type int32Test struct {
+		Usagi int32 `mask:"random1000"`
+	}
+	type int64Test struct {
+		Usagi int64 `mask:"random1000"`
+	}
 	type intPtrTest struct {
 		Usagi *int `mask:"random1000"`
 	}
 	type intSliceTest struct {
 		Usagi []int `mask:"random1000"`
+	}
+	type int32SliceTest struct {
+		Usagi []int32 `mask:"random1000"`
+	}
+	type int64SliceTest struct {
+		Usagi []int64 `mask:"random1000"`
 	}
 	type intSlicePtrTest struct {
 		Usagi *[]int `mask:"random1000"`
@@ -858,11 +872,23 @@ func TestMaskRandom(t *testing.T) {
 	type float64PtrTest struct {
 		Usagi *float64 `mask:"random5.4"`
 	}
+	type float32SliceTest struct {
+		Usagi []float32 `mask:"random5.4"`
+	}
 	type float64SliceTest struct {
 		Usagi []float64 `mask:"random5.4"`
 	}
 	type float64SlicePtrTest struct {
 		Usagi *[]float64 `mask:"random5.4"`
+	}
+	type stringToIntTest struct {
+		Usagi map[string]int `mask:"random1000"`
+	}
+	type stringToInt32Test struct {
+		Usagi map[string]int32 `mask:"random1000"`
+	}
+	type stringToInt64Test struct {
+		Usagi map[string]int64 `mask:"random1000"`
 	}
 
 	tests := map[string]struct {
@@ -872,6 +898,14 @@ func TestMaskRandom(t *testing.T) {
 		"int fields": {
 			input: &intTest{Usagi: 20190122},
 			want:  &intTest{Usagi: 829},
+		},
+		"int32 fields": {
+			input: &int32Test{Usagi: 20190122},
+			want:  &int32Test{Usagi: 829},
+		},
+		"int64 fields": {
+			input: &int64Test{Usagi: 20190122},
+			want:  &int64Test{Usagi: 829},
 		},
 		"zero int fields": {
 			input: &intTest{},
@@ -888,6 +922,14 @@ func TestMaskRandom(t *testing.T) {
 		"int slice fields": {
 			input: &intSliceTest{Usagi: []int{20190122, 20200501, 20200501}},
 			want:  &intSliceTest{Usagi: []int{829, 830, 400}},
+		},
+		"int32 slice fields": {
+			input: &int32SliceTest{Usagi: []int32{20190122, 20200501, 20200501}},
+			want:  &int32SliceTest{Usagi: []int32{829, 830, 400}},
+		},
+		"int64 slice fields": {
+			input: &int64SliceTest{Usagi: []int64{20190122, 20200501, 20200501}},
+			want:  &int64SliceTest{Usagi: []int64{829, 830, 400}},
 		},
 		"nil int slice fields": {
 			input: &intSliceTest{},
@@ -917,6 +959,10 @@ func TestMaskRandom(t *testing.T) {
 			input: &float64PtrTest{},
 			want:  &float64PtrTest{Usagi: nil},
 		},
+		"float32 slice fields": {
+			input: &float32SliceTest{Usagi: []float32{20190122, 20200501, 20200501}},
+			want:  &float32SliceTest{Usagi: []float32{96011.8989, 90863.3149, 32310.0201}},
+		},
 		"float64 slice fields": {
 			input: &float64SliceTest{Usagi: []float64{20190122, 20200501, 20200501}},
 			want:  &float64SliceTest{Usagi: []float64{96011.8989, 90863.3149, 32310.0201}},
@@ -932,6 +978,18 @@ func TestMaskRandom(t *testing.T) {
 		"nil float64 slice ptr fields": {
 			input: &float64SlicePtrTest{},
 			want:  &float64SlicePtrTest{Usagi: (*[]float64)(nil)},
+		},
+		"string to int map fields": {
+			input: &stringToIntTest{Usagi: map[string]int{"うさぎ": 20190122, "ちいかわ": 20200501, "はちわれ": 20200501}},
+			want:  &stringToIntTest{Usagi: map[string]int{"うさぎ": 829, "ちいかわ": 830, "はちわれ": 400}},
+		},
+		"string to int32 map fields": {
+			input: &stringToInt32Test{Usagi: map[string]int32{"うさぎ": 20190122, "ちいかわ": 20200501, "はちわれ": 20200501}},
+			want:  &stringToInt32Test{Usagi: map[string]int32{"うさぎ": 829, "ちいかわ": 830, "はちわれ": 400}},
+		},
+		"string to int64 map fields": {
+			input: &stringToInt64Test{Usagi: map[string]int64{"うさぎ": 20190122, "ちいかわ": 20200501, "はちわれ": 20200501}},
+			want:  &stringToInt64Test{Usagi: map[string]int64{"うさぎ": 829, "ちいかわ": 830, "はちわれ": 400}},
 		},
 	}
 

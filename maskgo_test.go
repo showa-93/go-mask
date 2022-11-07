@@ -1227,6 +1227,7 @@ type benchStruct2 struct {
 	Case3 bool
 	Case4 []string
 	Case5 map[string]string
+	Case6 map[int]string
 }
 type benchStruct1 struct {
 	Case1  string
@@ -1237,7 +1238,7 @@ type benchStruct1 struct {
 	Case44 []string
 	Case5  map[string]string
 	Case6  *benchStruct2   `mask:"struct"`
-	Case7  []*benchStruct2 `mask:"hide"`
+	Case7  []*benchStruct2 `mask:"struct"`
 }
 
 func createChiikawa(s string) *benchStruct2 {
@@ -1257,11 +1258,18 @@ func createChiikawa(s string) *benchStruct2 {
 			"ヤーッ！！！！":  "ヤーッ！！！",
 			"ヤーッ！！！！！": "ヤーッ！！！",
 		},
+		Case6: map[int]string{
+			1: "ヤーッ！！！",
+			2: "ヤーッ！！！",
+			3: "ヤーッ！！！",
+			4: "ヤーッ！！！",
+			5: "ヤーッ！！！",
+		},
 	}
 }
 
-func BenchmarkMask(b *testing.B) {
-	hachiware := benchStruct1{
+func createHachiware() *benchStruct1 {
+	return &benchStruct1{
 		Case1:  "はちわれ",
 		Case11: "はちわれ",
 		Case2:  20200501,
@@ -1290,9 +1298,13 @@ func BenchmarkMask(b *testing.B) {
 			createChiikawa("ちいかわ4"),
 		},
 	}
+}
+
+func BenchmarkMask(b *testing.B) {
+	hachiware := createChiikawa("hoge")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := Mask(&hachiware)
+		_, err := Mask(hachiware)
 		if err != nil {
 			b.Error(err)
 		}
@@ -1300,38 +1312,10 @@ func BenchmarkMask(b *testing.B) {
 }
 
 func BenchmarkGoMasker(b *testing.B) {
-	hachiware := benchStruct1{
-		Case1:  "はちわれ",
-		Case11: "はちわれ",
-		Case2:  20200501,
-		Case3:  true,
-		Case4: []string{
-			"もしかして",
-			"ベンチマーク",
-			"とってる…",
-			"ってコト！？",
-		},
-		Case44: []string{
-			"もしかして",
-			"ベンチマーク",
-			"とってる…",
-			"ってコト！？",
-		},
-		Case5: map[string]string{
-			"モモンガ": "慰めろッ",
-			"はちわれ": "なになに！？",
-		},
-		Case6: createChiikawa("ちいかわ"),
-		Case7: []*benchStruct2{
-			createChiikawa("ちいかわ1"),
-			createChiikawa("ちいかわ2"),
-			createChiikawa("ちいかわ3"),
-			createChiikawa("ちいかわ4"),
-		},
-	}
+	hachiware := createChiikawa("hoge")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := masker.Struct(&hachiware)
+		_, err := masker.Struct(hachiware)
 		if err != nil {
 			b.Error(err)
 		}

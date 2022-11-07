@@ -359,36 +359,44 @@ func maskAnyKeykMap(rv reflect.Value, tag string) (reflect.Value, error) {
 	rv2 := reflect.MakeMapWithSize(rv.Type(), rv.Len())
 	switch rv.Type().Elem().Kind() {
 	case reflect.String:
-		for _, key := range rv.MapKeys() {
-			rvf, err := MaskString(tag, rv.MapIndex(key).String())
+		iter := rv.MapRange()
+		for iter.Next() {
+			key, value := iter.Key(), iter.Value()
+			rvf, err := MaskString(tag, value.String())
 			if err != nil {
 				return reflect.Value{}, err
 			}
-			rv2.SetMapIndex(key, reflect.ValueOf(rvf))
+			rv2.SetMapIndex(reflect.ToValue(key), reflect.ValueOf(rvf))
 		}
 	case reflect.Int:
-		for _, key := range rv.MapKeys() {
-			rvf, err := MaskInt(tag, int(rv.MapIndex(key).Int()))
+		iter := rv.MapRange()
+		for iter.Next() {
+			key, value := iter.Key(), iter.Value()
+			rvf, err := MaskInt(tag, int(value.Int()))
 			if err != nil {
 				return reflect.Value{}, err
 			}
-			rv2.SetMapIndex(key, reflect.ValueOf(rvf))
+			rv2.SetMapIndex(reflect.ToValue(key), reflect.ValueOf(rvf))
 		}
 	case reflect.Float64:
-		for _, key := range rv.MapKeys() {
-			rvf, err := MaskFloat64(tag, rv.MapIndex(key).Float())
+		iter := rv.MapRange()
+		for iter.Next() {
+			key, value := iter.Key(), iter.Value()
+			rvf, err := MaskFloat64(tag, value.Float())
 			if err != nil {
 				return reflect.Value{}, err
 			}
-			rv2.SetMapIndex(key, reflect.ValueOf(rvf))
+			rv2.SetMapIndex(reflect.ToValue(key), reflect.ValueOf(rvf))
 		}
 	default:
-		for _, key := range rv.MapKeys() {
-			rf, err := mask(rv.MapIndex(key), tag, reflect.Value{})
+		iter := rv.MapRange()
+		for iter.Next() {
+			key, value := iter.Key(), iter.Value()
+			rf, err := mask(reflect.ToValue(value), tag, reflect.Value{})
 			if err != nil {
 				return reflect.Value{}, err
 			}
-			rv2.SetMapIndex(key, rf)
+			rv2.SetMapIndex(reflect.ToValue(key), rf)
 		}
 	}
 
@@ -399,42 +407,35 @@ func maskStringKeyMap(rv reflect.Value, tag string) (reflect.Value, error) {
 	switch rv.Type().Elem().Kind() {
 	case reflect.String:
 		m := make(map[string]string, rv.Len())
-		iter := rv.MapRange()
-		for iter.Next() {
-			key := iter.Key()
-			value := iter.Value().String()
-			rvf, err := MaskString(tag, value)
+		for k, v := range rv.Interface().(map[string]string) {
+			rvf, err := MaskString(tag, v)
 			if err != nil {
 				return reflect.Value{}, err
 			}
-			m[key.String()] = rvf
+			m[k] = rvf
 		}
+
 		return reflect.ValueOf(m), nil
 	case reflect.Int:
 		m := make(map[string]int, rv.Len())
-		iter := rv.MapRange()
-		for iter.Next() {
-			key := iter.Key()
-			value := int(iter.Value().Int())
-			rvf, err := MaskInt(tag, value)
+		for k, v := range rv.Interface().(map[string]int) {
+			rvf, err := MaskInt(tag, v)
 			if err != nil {
 				return reflect.Value{}, err
 			}
-			m[key.String()] = rvf
+			m[k] = rvf
 		}
 		return reflect.ValueOf(m), nil
 	case reflect.Float64:
 		m := make(map[string]float64, rv.Len())
-		iter := rv.MapRange()
-		for iter.Next() {
-			key := iter.Key()
-			value := iter.Value().Float()
-			rvf, err := MaskFloat64(tag, value)
+		for k, v := range rv.Interface().(map[string]float64) {
+			rvf, err := MaskFloat64(tag, v)
 			if err != nil {
 				return reflect.Value{}, err
 			}
-			m[key.String()] = rvf
+			m[k] = rvf
 		}
+
 		return reflect.ValueOf(m), nil
 	}
 

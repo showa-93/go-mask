@@ -429,8 +429,8 @@ func TestMaskString(t *testing.T) {
 			input: "ヤハッ！",
 			want:  "****",
 		},
-		"hide": {
-			tag:   MaskTypeHide,
+		"zero": {
+			tag:   MaskTypeZero,
 			input: "ヤハッ！",
 			want:  "",
 		},
@@ -480,8 +480,8 @@ func TestMaskInt(t *testing.T) {
 			input: 20190122,
 			want:  829,
 		},
-		"hide": {
-			tag:   "hide",
+		"zero": {
+			tag:   "zero",
 			input: 0,
 			want:  0,
 		},
@@ -546,8 +546,8 @@ func TestMaskFloat64(t *testing.T) {
 			input: 20190122,
 			want:  9.0,
 		},
-		"hide": {
-			tag:   "hide",
+		"zero": {
+			tag:   "zero",
 			input: 20190122,
 			want:  0,
 		},
@@ -1021,33 +1021,33 @@ func TestMaskRandom(t *testing.T) {
 	}
 }
 
-func TestMaskHide(t *testing.T) {
+func TestMaskZero(t *testing.T) {
 	type stringTest struct {
-		Usagi string `mask:"hide"`
+		Usagi string `mask:"zero"`
 	}
 	type stringPtrTest struct {
-		Usagi *string `mask:"hide"`
+		Usagi *string `mask:"zero"`
 	}
 	type stringSliceTest struct {
-		Usagi []string `mask:"hide"`
+		Usagi []string `mask:"zero"`
 	}
 	type stringSlicePtrTest struct {
-		Usagi *[]string `mask:"hide"`
+		Usagi *[]string `mask:"zero"`
 	}
 	type intTest struct {
-		Usagi int `mask:"hide"`
+		Usagi int `mask:"zero"`
 	}
 	type float64Test struct {
-		Usagi float64 `mask:"hide"`
+		Usagi float64 `mask:"zero"`
 	}
 	type boolTest struct {
-		Usagi bool `mask:"hide"`
+		Usagi bool `mask:"zero"`
 	}
 	type mapStringToStringTest struct {
-		Usagi map[string]string `mask:"hide"`
+		Usagi map[string]string `mask:"zero"`
 	}
 	type structTest struct {
-		StringTest stringTest `mask:"hide"`
+		StringTest stringTest `mask:"zero"`
 	}
 
 	tests := map[string]struct {

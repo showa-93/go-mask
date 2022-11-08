@@ -19,7 +19,7 @@ const (
 	MaskTypeFilled = "filled"
 	MaskTypeRandom = "random"
 	MaskTypeHash   = "hash"
-	MaskTypeHide   = "hide"
+	MaskTypeZero   = "zero"
 )
 
 type storeStruct struct {
@@ -70,7 +70,7 @@ func RegisterMaskFloat64Func(maskType string, f maskFloat64Func) {
 
 func MaskString(tag, value string) (string, error) {
 	if tag != "" {
-		if tag == MaskTypeHide {
+		if tag == MaskTypeZero {
 			return "", nil
 		}
 
@@ -86,7 +86,7 @@ func MaskString(tag, value string) (string, error) {
 
 func MaskInt(tag string, value int) (int, error) {
 	if tag != "" {
-		if tag == MaskTypeHide {
+		if tag == MaskTypeZero {
 			return 0, nil
 		}
 
@@ -102,7 +102,7 @@ func MaskInt(tag string, value int) (int, error) {
 
 func MaskFloat64(tag string, value float64) (float64, error) {
 	if tag != "" {
-		if tag == MaskTypeHide {
+		if tag == MaskTypeZero {
 			return 0, nil
 		}
 
@@ -179,7 +179,7 @@ func Mask(target any) (any, error) {
 }
 
 func mask(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {
-	if strings.HasPrefix(tag, MaskTypeHide) {
+	if strings.HasPrefix(tag, MaskTypeZero) {
 		return reflect.Zero(rv.Type()), nil
 	}
 	switch rv.Type().Kind() {

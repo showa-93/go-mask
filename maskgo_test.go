@@ -8,6 +8,7 @@ import (
 
 	"github.com/ggwhite/go-masker"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -981,15 +982,15 @@ func TestMaskRandom(t *testing.T) {
 		},
 		"string to int map fields": {
 			input: &stringToIntTest{Usagi: map[string]int{"うさぎ": 20190122, "ちいかわ": 20200501, "はちわれ": 20200501}},
-			want:  &stringToIntTest{Usagi: map[string]int{"うさぎ": 829, "ちいかわ": 830, "はちわれ": 400}},
+			want:  &stringToIntTest{Usagi: map[string]int{"はちわれ": 400, "うさぎ": 829, "ちいかわ": 830}},
 		},
 		"string to int32 map fields": {
 			input: &stringToInt32Test{Usagi: map[string]int32{"うさぎ": 20190122, "ちいかわ": 20200501, "はちわれ": 20200501}},
-			want:  &stringToInt32Test{Usagi: map[string]int32{"うさぎ": 829, "ちいかわ": 830, "はちわれ": 400}},
+			want:  &stringToInt32Test{Usagi: map[string]int32{"はちわれ": 400, "うさぎ": 829, "ちいかわ": 830}},
 		},
 		"string to int64 map fields": {
 			input: &stringToInt64Test{Usagi: map[string]int64{"うさぎ": 20190122, "ちいかわ": 20200501, "はちわれ": 20200501}},
-			want:  &stringToInt64Test{Usagi: map[string]int64{"うさぎ": 829, "ちいかわ": 830, "はちわれ": 400}},
+			want:  &stringToInt64Test{Usagi: map[string]int64{"はちわれ": 400, "うさぎ": 829, "ちいかわ": 830}},
 		},
 	}
 
@@ -998,9 +999,10 @@ func TestMaskRandom(t *testing.T) {
 			defer cleanup(t)
 			rand.Seed(rand.NewSource(1).Int63())
 			got, err := Mask(tt.input)
-			assert.Nil(t, err)
-			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
-				t.Error(diff)
+			if assert.NoError(t, err) {
+				if diff := cmp.Diff(tt.want, got, cmpopts.SortMaps(func(i, j string) bool { return i < j })); diff != "" {
+					t.Error(diff)
+				}
 			}
 		})
 	}

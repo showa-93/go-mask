@@ -1,12 +1,8 @@
 package maskgo
 
 import (
-	"fmt"
 	"math/rand"
-	"regexp"
-	"strings"
 	"testing"
-	"unicode/utf8"
 
 	"github.com/goccy/go-reflect"
 
@@ -16,7 +12,115 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMask(t *testing.T) {
+func TestMask_PrimitiveType(t *testing.T) {
+	tests := map[string]struct {
+		input any
+		want  any
+	}{
+		"string": {
+			input: "ヤハッ！",
+			want:  "ヤハッ！",
+		},
+		"empty string": {
+			input: "",
+			want:  "",
+		},
+		"true": {
+			input: true,
+			want:  true,
+		},
+		"false": {
+			input: false,
+			want:  false,
+		},
+		"int16": {
+			input: int16(2019),
+			want:  int16(2019),
+		},
+		"int32": {
+			input: int32(20190122),
+			want:  int32(20190122),
+		},
+		"int64": {
+			input: int64(20190122),
+			want:  int64(20190122),
+		},
+		"int": {
+			input: 20190122,
+			want:  20190122,
+		},
+		"zero int": {
+			input: 0,
+			want:  0,
+		},
+		"float32": {
+			input: 20190122,
+			want:  20190122,
+		},
+		"float64": {
+			input: 20190122,
+			want:  20190122,
+		},
+		"zero float64": {
+			input: 0,
+			want:  0,
+		},
+		"string pointer": {
+			input: convertStringPtr("ヤハッ！"),
+			want:  convertStringPtr("ヤハッ！"),
+		},
+		"int16 pointer": {
+			input: convertInt16Ptr(2019),
+			want:  convertInt16Ptr(2019),
+		},
+		"int32 pointer": {
+			input: convertInt32Ptr(20190122),
+			want:  convertInt32Ptr(20190122),
+		},
+		"int64 pointer": {
+			input: convertInt64Ptr(20190122),
+			want:  convertInt64Ptr(20190122),
+		},
+		"int pointer": {
+			input: convertIntPtr(20190122),
+			want:  convertIntPtr(20190122),
+		},
+		"float32 pointer": {
+			input: convertFloat32Ptr(20190122),
+			want:  convertFloat32Ptr(20190122),
+		},
+		"float64 pointer": {
+			input: convertFloat64Ptr(20190122),
+			want:  convertFloat64Ptr(20190122),
+		},
+		"nil string pointer": {
+			input: (*string)(nil),
+			want:  (*string)(nil),
+		},
+		"nil int pointer": {
+			input: (*int)(nil),
+			want:  (*int)(nil),
+		},
+		"nil float64 pointer": {
+			input: (*float64)(nil),
+			want:  (*float64)(nil),
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			defer cleanup(t)
+			got, err := Mask(tt.input)
+			if assert.NoError(t, err) {
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Error(diff)
+				}
+			}
+		})
+	}
+}
+
+func TestMask_CompositeType(t *testing.T) {
 	type stringTest struct {
 		Usagi string
 	}
@@ -62,6 +166,9 @@ func TestMask(t *testing.T) {
 	type mapStringToStringTest struct {
 		Usagi map[string]string
 	}
+	type mapStringToStringSliceTest struct {
+		Usagi []map[string]string
+	}
 	type mapStringToIntTest struct {
 		Usagi map[string]int
 	}
@@ -96,27 +203,12 @@ func TestMask(t *testing.T) {
 	type unexportedTest struct {
 		usagi string
 	}
+	type testInterface interface{}
 
 	tests := map[string]struct {
 		input any
 		want  any
 	}{
-		"string": {
-			input: "ヤハッ！",
-			want:  "ヤハッ！",
-		},
-		"string empty": {
-			input: "",
-			want:  "",
-		},
-		"string ptr": {
-			input: convertStringPtr("ヤハッ！"),
-			want:  convertStringPtr("ヤハッ！"),
-		},
-		"nil string ptr": {
-			input: (*string)(nil),
-			want:  (*string)(nil),
-		},
 		"string fields": {
 			input: &stringTest{Usagi: "ヤハッ！"},
 			want:  &stringTest{Usagi: "ヤハッ！"},
@@ -173,22 +265,6 @@ func TestMask(t *testing.T) {
 			input: &stringSlicePtrTest{},
 			want:  &stringSlicePtrTest{Usagi: (*[]string)(nil)},
 		},
-		"int": {
-			input: 20190122,
-			want:  20190122,
-		},
-		"zero int": {
-			input: 0,
-			want:  0,
-		},
-		"int ptr": {
-			input: convertIntPtr(20190122),
-			want:  convertIntPtr(20190122),
-		},
-		"nil int ptr": {
-			input: (*int)(nil),
-			want:  (*int)(nil),
-		},
 		"int slice": {
 			input: []int{20190122, 20200501, 20200501},
 			want:  []int{20190122, 20200501, 20200501},
@@ -236,22 +312,6 @@ func TestMask(t *testing.T) {
 		"nil int slice ptr fields": {
 			input: &intSlicePtrTest{},
 			want:  &intSlicePtrTest{Usagi: (*[]int)(nil)},
-		},
-		"float64": {
-			input: 20190122,
-			want:  20190122,
-		},
-		"zero float64": {
-			input: 0,
-			want:  0,
-		},
-		"float64 ptr": {
-			input: convertFloat64Ptr(20190122),
-			want:  convertFloat64Ptr(20190122),
-		},
-		"nil float64 ptr": {
-			input: (*float64)(nil),
-			want:  (*float64)(nil),
 		},
 		"float64 slice": {
 			input: []float64{20190122, 20200501, 20200501},
@@ -320,6 +380,10 @@ func TestMask(t *testing.T) {
 		"map string to string fields": {
 			input: &mapStringToStringTest{Usagi: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
 			want:  &mapStringToStringTest{Usagi: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
+		},
+		"map string to string slice fields": {
+			input: &mapStringToStringSliceTest{Usagi: []map[string]string{{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}}},
+			want:  &mapStringToStringSliceTest{Usagi: []map[string]string{{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}}},
 		},
 		"nil map string to string fields": {
 			input: &mapStringToStringTest{},
@@ -603,22 +667,6 @@ func TestMaskFilled(t *testing.T) {
 		input any
 		want  any
 	}{
-		"string": {
-			input: "ヤハッ！",
-			want:  "ヤハッ！",
-		},
-		"zero string": {
-			input: "",
-			want:  "",
-		},
-		"string ptr": {
-			input: convertStringPtr("ヤハッ！"),
-			want:  convertStringPtr("ヤハッ！"),
-		},
-		"nil string ptr": {
-			input: (*string)(nil),
-			want:  (*string)(nil),
-		},
 		"string fields": {
 			input: &stringTest{Usagi: "ヤハッ！"},
 			want:  &stringTest{Usagi: "****"},
@@ -626,30 +674,6 @@ func TestMaskFilled(t *testing.T) {
 		"zero string fields": {
 			input: &stringTest{},
 			want:  &stringTest{Usagi: ""},
-		},
-		"string slice": {
-			input: []string{"ハァ？", "ウラ", "フゥン"},
-			want:  []string{"ハァ？", "ウラ", "フゥン"},
-		},
-		"nil string slice": {
-			input: ([]string)(nil),
-			want:  ([]string)(nil),
-		},
-		"string slice ptr": {
-			input: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
-			want:  convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
-		},
-		"nil string slice ptr": {
-			input: (*[]string)(nil),
-			want:  (*[]string)(nil),
-		},
-		"string map": {
-			input: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"},
-			want:  map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"},
-		},
-		"nil string map": {
-			input: (map[string]string)(nil),
-			want:  (map[string]string)(nil),
 		},
 		"string ptr fields": {
 			input: &stringPtrTest{Usagi: convertStringPtr("ヤハッ！")},
@@ -736,22 +760,6 @@ func TestMaskHashString(t *testing.T) {
 		input any
 		want  any
 	}{
-		"string": {
-			input: "ヤハッ！",
-			want:  "ヤハッ！",
-		},
-		"zero string": {
-			input: "",
-			want:  "",
-		},
-		"string ptr": {
-			input: convertStringPtr("ヤハッ！"),
-			want:  convertStringPtr("ヤハッ！"),
-		},
-		"nil string ptr": {
-			input: (*string)(nil),
-			want:  (*string)(nil),
-		},
 		"string fields": {
 			input: &stringTest{Usagi: "ヤハッ！"},
 			want:  &stringTest{Usagi: "a6ab5728db57954641b2e155adc61f2cbdfc7063"},
@@ -759,30 +767,6 @@ func TestMaskHashString(t *testing.T) {
 		"zero string fields": {
 			input: &stringTest{},
 			want:  &stringTest{Usagi: ""},
-		},
-		"string slice": {
-			input: []string{"ハァ？", "ウラ", "フゥン"},
-			want:  []string{"ハァ？", "ウラ", "フゥン"},
-		},
-		"nil string slice": {
-			input: ([]string)(nil),
-			want:  ([]string)(nil),
-		},
-		"string slice ptr": {
-			input: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
-			want:  convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
-		},
-		"nil string slice ptr": {
-			input: (*[]string)(nil),
-			want:  (*[]string)(nil),
-		},
-		"string map": {
-			input: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"},
-			want:  map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"},
-		},
-		"nil string map": {
-			input: (map[string]string)(nil),
-			want:  (map[string]string)(nil),
 		},
 		"string ptr fields": {
 			input: &stringPtrTest{Usagi: convertStringPtr("ヤハッ！")},
@@ -859,6 +843,9 @@ func TestMaskRandom(t *testing.T) {
 	type intTest struct {
 		Usagi int `mask:"random1000"`
 	}
+	type int16Test struct {
+		Usagi int32 `mask:"random1000"`
+	}
 	type int32Test struct {
 		Usagi int32 `mask:"random1000"`
 	}
@@ -912,6 +899,10 @@ func TestMaskRandom(t *testing.T) {
 		"int fields": {
 			input: &intTest{Usagi: 20190122},
 			want:  &intTest{Usagi: 829},
+		},
+		"int16 fields": {
+			input: &int16Test{Usagi: 2019},
+			want:  &int16Test{Usagi: 829},
 		},
 		"int32 fields": {
 			input: &int32Test{Usagi: 20190122},
@@ -994,16 +985,16 @@ func TestMaskRandom(t *testing.T) {
 			want:  &float64SlicePtrTest{Usagi: (*[]float64)(nil)},
 		},
 		"string to int map fields": {
-			input: &stringToIntTest{Usagi: map[string]int{"うさぎ": 20190122, "ちいかわ": 20200501, "はちわれ": 20200501}},
-			want:  &stringToIntTest{Usagi: map[string]int{"はちわれ": 400, "うさぎ": 829, "ちいかわ": 830}},
+			input: &stringToIntTest{Usagi: map[string]int{"うさぎ": 20190122}},
+			want:  &stringToIntTest{Usagi: map[string]int{"うさぎ": 829}},
 		},
 		"string to int32 map fields": {
-			input: &stringToInt32Test{Usagi: map[string]int32{"うさぎ": 20190122, "ちいかわ": 20200501, "はちわれ": 20200501}},
-			want:  &stringToInt32Test{Usagi: map[string]int32{"はちわれ": 400, "うさぎ": 829, "ちいかわ": 830}},
+			input: &stringToInt32Test{Usagi: map[string]int32{"うさぎ": 20190122}},
+			want:  &stringToInt32Test{Usagi: map[string]int32{"うさぎ": 829}},
 		},
 		"string to int64 map fields": {
-			input: &stringToInt64Test{Usagi: map[string]int64{"うさぎ": 20190122, "ちいかわ": 20200501, "はちわれ": 20200501}},
-			want:  &stringToInt64Test{Usagi: map[string]int64{"はちわれ": 400, "うさぎ": 829, "ちいかわ": 830}},
+			input: &stringToInt64Test{Usagi: map[string]int64{"うさぎ": 20190122}},
+			want:  &stringToInt64Test{Usagi: map[string]int64{"うさぎ": 829}},
 		},
 	}
 
@@ -1180,11 +1171,23 @@ func convertStringPtr(s string) *string {
 func convertStringSlicePtr(s []string) *[]string {
 	return &s
 }
+func convertInt16Ptr(i int16) *int16 {
+	return &i
+}
+func convertInt32Ptr(i int32) *int32 {
+	return &i
+}
+func convertInt64Ptr(i int64) *int64 {
+	return &i
+}
 func convertIntPtr(i int) *int {
 	return &i
 }
 func convertIntSlicePtr(i []int) *[]int {
 	return &i
+}
+func convertFloat32Ptr(f float32) *float32 {
+	return &f
 }
 func convertFloat64Ptr(f float64) *float64 {
 	return &f
@@ -1205,12 +1208,13 @@ func cleanup(t *testing.T) {
 }
 
 type benchStruct2 struct {
-	Case1 string
-	Case2 int
-	Case3 bool
-	Case4 []string
-	Case5 map[string]string
-	Case6 map[int]string
+	Case1  string
+	Case11 ***string
+	Case2  int
+	Case3  bool
+	Case4  []string
+	Case5  map[string]string
+	Case6  map[int]string
 }
 type benchStruct1 struct {
 	Case1  string
@@ -1225,10 +1229,13 @@ type benchStruct1 struct {
 }
 
 func createChiikawa(s string) *benchStruct2 {
+	hoge := convertStringPtr("hoge")
+	fuga := &hoge
 	return &benchStruct2{
-		Case1: s,
-		Case2: 20200501,
-		Case3: false,
+		Case1:  s,
+		Case11: &fuga,
+		Case2:  20200501,
+		Case3:  false,
 		Case4: []string{
 			"わァ………",
 			"ァ…………",
@@ -1283,8 +1290,16 @@ func createHachiware() *benchStruct1 {
 	}
 }
 
+type BenchStruct2 struct {
+	Name string
+}
+type BenchStruct1 struct {
+	Name         string
+	BenchStruct2 `mask:"struct"`
+}
+
 func BenchmarkMask(b *testing.B) {
-	hachiware := createChiikawa("hoge")
+	hachiware := createHachiware()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := Mask(hachiware)
@@ -1295,7 +1310,7 @@ func BenchmarkMask(b *testing.B) {
 }
 
 func BenchmarkGoMasker(b *testing.B) {
-	hachiware := createChiikawa("hoge")
+	hachiware := createHachiware()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := masker.Struct(hachiware)

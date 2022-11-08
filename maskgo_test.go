@@ -205,6 +205,9 @@ func TestMask_CompositeType(t *testing.T) {
 	type anyTest struct {
 		Usagi any
 	}
+	type anyPtrTest struct {
+		Usagi *any
+	}
 
 	tests := map[string]struct {
 		input any
@@ -478,6 +481,14 @@ func TestMask_CompositeType(t *testing.T) {
 		"nil in any fields": {
 			input: anyTest{Usagi: nil},
 			want:  anyTest{Usagi: nil},
+		},
+		"string struct in any pointer fields": {
+			input: anyPtrTest{Usagi: convertAnyPtr(stringTest{"hoge"})},
+			want:  anyPtrTest{Usagi: convertAnyPtr(stringTest{"hoge"})},
+		},
+		"int struct in any pointer fields": {
+			input: anyPtrTest{Usagi: convertAnyPtr(intTest{2})},
+			want:  anyPtrTest{Usagi: convertAnyPtr(intTest{2})},
 		},
 	}
 
@@ -1217,6 +1228,9 @@ func convertFloat64SlicePtr(f []float64) *[]float64 {
 	return &f
 }
 func convertBoolPtr(v bool) *bool {
+	return &v
+}
+func convertAnyPtr(v any) *any {
 	return &v
 }
 

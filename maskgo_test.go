@@ -574,8 +574,14 @@ func TestMaskFilled(t *testing.T) {
 	type stringTest struct {
 		Usagi string `mask:"filled"`
 	}
+	type stringMask5Test struct {
+		Usagi string `mask:"filled5"`
+	}
 	type stringPtrTest struct {
 		Usagi *string `mask:"filled"`
+	}
+	type stringPtrMask8Test struct {
+		Usagi *string `mask:"filled8"`
 	}
 	type stringSliceTest struct {
 		Usagi []string `mask:"filled"`
@@ -680,6 +686,14 @@ func TestMaskFilled(t *testing.T) {
 		"struct to string map fields": {
 			input: &structToStringMapTest{Usagi: map[stringTest]string{{Usagi: "ヤハッ！"}: "ハァ？", {Usagi: "ヤハッ！！"}: "ウラ", {Usagi: "ヤハッ！！！"}: "フゥン"}},
 			want:  &structToStringMapTest{Usagi: map[stringTest]string{{Usagi: "ヤハッ！"}: "***", {Usagi: "ヤハッ！！"}: "**", {Usagi: "ヤハッ！！！"}: "***"}},
+		},
+		"filled 5 chars": {
+			input: stringMask5Test{Usagi: "ヤハッ！"},
+			want:  stringMask5Test{Usagi: "*****"},
+		},
+		"filled 8 chars": {
+			input: stringPtrMask8Test{Usagi: convertStringPtr("ヤハッ！")},
+			want:  stringPtrMask8Test{Usagi: convertStringPtr("********")},
 		},
 	}
 

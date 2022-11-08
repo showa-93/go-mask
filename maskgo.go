@@ -117,7 +117,16 @@ func MaskFloat64(tag string, value float64) (float64, error) {
 }
 
 func maskFilledString(arg, value string) (string, error) {
-	return strings.Repeat(maskChar, utf8.RuneCountInString(value)), nil
+	if arg != "" {
+		count, err := strconv.Atoi(arg)
+		if err != nil {
+			return "", err
+		}
+
+		return strings.Repeat(MaskChar(), count), nil
+	}
+
+	return strings.Repeat(MaskChar(), utf8.RuneCountInString(value)), nil
 }
 
 func maskHashString(arg, value string) (string, error) {

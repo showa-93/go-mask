@@ -9,7 +9,7 @@ import (
 	"github.com/showa-93/maskgo"
 )
 
-// MaskRegExp is sample to add custom mask function
+// MaskRegExp is sample to add a custom mask function
 func MaskRegExp(arg, value string) (string, error) {
 	var (
 		reg *regexp.Regexp
@@ -32,18 +32,19 @@ func MaskRegExp(arg, value string) (string, error) {
 	return value, nil
 }
 
-func Example_wholeFileExample() {
+func Example_customMaskFunc() {
 	maskTypeRegExp := "regexp"
+	maskgo.SetMaskChar("■")
 	maskgo.RegisterMaskStringFunc(maskTypeRegExp, MaskRegExp)
 
-	type RegExpTest struct {
-		Usagi string `mask:"regexp(ヤハ)*"`
+	type Hachiware struct {
+		Message string `mask:"regexp(最高)."`
 	}
 
-	input := RegExpTest{Usagi: "ヤハッ！"}
+	input := Hachiware{Message: "これって…最高じゃん"}
 	got, _ := maskgo.Mask(input)
-	fmt.Printf("Usagi %s\n", got.(RegExpTest).Usagi)
+	fmt.Printf("\"%s\", Hachiware says\n", got.(Hachiware).Message)
 
 	// Output:
-	// Usagi **ッ！
+	// "これって…■■じゃん", Hachiware says
 }

@@ -1,8 +1,12 @@
 package maskgo
 
 import (
+	"fmt"
 	"math/rand"
+	"regexp"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/goccy/go-reflect"
 
@@ -424,11 +428,6 @@ func TestMaskString(t *testing.T) {
 			tag:   MaskTypeFilled,
 			input: "ヤハッ！",
 			want:  "****",
-		},
-		"regexp(ヤハ)*": {
-			tag:   MaskTypeRegExp + "(ヤハ)*",
-			input: "ヤハッ！ヤハッ！",
-			want:  "**ッ！ヤハッ！",
 		},
 		"hide": {
 			tag:   MaskTypeHide,
@@ -1008,38 +1007,6 @@ func TestMaskRandom(t *testing.T) {
 	}
 }
 
-func TestMaskRegExp(t *testing.T) {
-	type stringTest struct {
-		Usagi string `mask:"regexp(ヤハ)*"`
-	}
-
-	tests := map[string]struct {
-		input any
-		want  any
-	}{
-		"regexp(ヤハ)*": {
-			input: stringTest{Usagi: "ヤハッ！ヤハッ！"},
-			want:  stringTest{Usagi: "**ッ！ヤハッ！"},
-		},
-		"not regexp(ヤハ)*": {
-			input: stringTest{Usagi: "ウラァ"},
-			want:  stringTest{Usagi: "ウラァ"},
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			defer cleanup(t)
-			rand.Seed(rand.NewSource(1).Int63())
-			got, err := Mask(tt.input)
-			assert.Nil(t, err)
-			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
-				t.Error(diff)
-			}
-		})
-	}
-}
-
 func TestMaskHide(t *testing.T) {
 	type stringTest struct {
 		Usagi string `mask:"hide"`
@@ -1221,6 +1188,45 @@ func cleanup(t *testing.T) {
 		typeToStructMap.Delete(key)
 		return false
 	})
+}
+
+// MaskRegExp is sample to add custom mask function
+func MaskRegExp(arg, value string) (string, error) {
+	var (
+		reg *regexp.Regexp
+		err error
+	)
+	reg, err = regexp.Compile(arg)
+	if err != nil {
+		return "", err
+	}
+
+	indexes := reg.FindStringSubmatchIndex(value)
+	if len(indexes) >= 4 && indexes[2] >= 0 && indexes[3] >= 0 {
+		var sb strings.Builder
+		sb.WriteString(value[:indexes[2]])
+		sb.WriteString(strings.Repeat(maskChar, utf8.RuneCountInString(value[indexes[2]:indexes[3]])))
+		sb.WriteString(value[indexes[3]:])
+		return sb.String(), nil
+	}
+
+	return value, nil
+}
+
+func ExampleMaskRegExp() {
+	maskTypeRegExp := "regexp"
+	RegisterMaskStringFunc(maskTypeRegExp, MaskRegExp)
+
+	type RegExpTest struct {
+		Usagi string `mask:"regexp(ヤハ)*"`
+	}
+
+	input := RegExpTest{Usagi: "ヤハッ！"}
+	got, _ := Mask(input)
+	fmt.Printf("Usagi %s\n", got.(RegExpTest).Usagi)
+
+	// Output:
+	// Usagi **ッ！
 }
 
 type benchStruct2 struct {

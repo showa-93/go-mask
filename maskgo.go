@@ -52,6 +52,14 @@ var (
 	}
 )
 
+func SetMaskChar(s string) {
+	maskChar = s
+}
+
+func MaskChar() string {
+	return maskChar
+}
+
 func RegisterMaskStringFunc(maskType string, f maskStringFunc) {
 	maskStringFuncMap[maskType] = f
 }

@@ -527,22 +527,22 @@ func TestMaskFloat64(t *testing.T) {
 			wantErr: true,
 		},
 		"random4.XX": {
-			tag:     MaskTypeRandom + "4.XX",
+			tag:     MaskTypeRandom + "10000.XX",
 			input:   20190122,
 			wantErr: true,
 		},
 		"random5.4": {
-			tag:   MaskTypeRandom + "5.4",
+			tag:   MaskTypeRandom + "100000.4",
 			input: 20190122,
 			want:  96011.8989,
 		},
 		"random1.1": {
-			tag:   MaskTypeRandom + "1.1",
+			tag:   MaskTypeRandom + "10.1",
 			input: 20190122,
 			want:  9.6,
 		},
 		"random1": {
-			tag:   MaskTypeRandom + "1",
+			tag:   MaskTypeRandom + "10",
 			input: 20190122,
 			want:  9.0,
 		},
@@ -881,19 +881,19 @@ func TestMaskRandom(t *testing.T) {
 		Usagi *[]int `mask:"random1000"`
 	}
 	type float64Test struct {
-		Usagi float64 `mask:"random5.4"`
+		Usagi float64 `mask:"random100000.4"`
 	}
 	type float64PtrTest struct {
-		Usagi *float64 `mask:"random5.4"`
+		Usagi *float64 `mask:"random100000.4"`
 	}
 	type float32SliceTest struct {
-		Usagi []float32 `mask:"random5.4"`
+		Usagi []float32 `mask:"random100000.4"`
 	}
 	type float64SliceTest struct {
-		Usagi []float64 `mask:"random5.4"`
+		Usagi []float64 `mask:"random100000.4"`
 	}
 	type float64SlicePtrTest struct {
-		Usagi *[]float64 `mask:"random5.4"`
+		Usagi *[]float64 `mask:"random100000.4"`
 	}
 	type stringToIntTest struct {
 		Usagi map[string]int `mask:"random1000"`

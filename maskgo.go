@@ -161,7 +161,7 @@ func maskRandomFloat64(arg string, value float64) (float64, error) {
 	}
 
 	dd := math.Pow10(d)
-	x := float64(int(rand.Float64() * math.Pow10(i) * dd))
+	x := float64(int(rand.Float64() * float64(i) * dd))
 
 	return x / dd, nil
 }

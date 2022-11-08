@@ -429,6 +429,14 @@ func maskStringKeyMap(rv reflect.Value, tag string) (reflect.Value, error) {
 }
 
 func maskString(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {
+	if tag == "" {
+		if mp.IsValid() {
+			mp.Set(rv)
+			return mp, nil
+		}
+		return rv, nil
+	}
+
 	sp, err := MaskString(tag, rv.String())
 	if err != nil {
 		return reflect.Value{}, err
@@ -442,6 +450,14 @@ func maskString(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, 
 }
 
 func maskInt(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {
+	if tag == "" {
+		if mp.IsValid() {
+			mp.Set(rv)
+			return mp, nil
+		}
+		return rv, nil
+	}
+
 	ip, err := MaskInt(tag, int(rv.Int()))
 	if err != nil {
 		return reflect.Value{}, err
@@ -459,6 +475,14 @@ func maskInt(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, err
 }
 
 func maskfloat64(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {
+	if tag == "" {
+		if mp.IsValid() {
+			mp.Set(rv)
+			return mp, nil
+		}
+		return rv, nil
+	}
+
 	fp, err := MaskFloat64(tag, rv.Float())
 	if err != nil {
 		return reflect.Value{}, err

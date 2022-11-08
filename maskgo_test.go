@@ -202,7 +202,9 @@ func TestMask_CompositeType(t *testing.T) {
 	type unexportedTest struct {
 		usagi string
 	}
-	type testInterface interface{}
+	type anyTest struct {
+		Usagi any
+	}
 
 	tests := map[string]struct {
 		input any
@@ -456,6 +458,26 @@ func TestMask_CompositeType(t *testing.T) {
 		"unexported fields": {
 			input: &unexportedTest{usagi: "ヤハッ！"},
 			want:  &unexportedTest{},
+		},
+		"string in any fields": {
+			input: anyTest{Usagi: "hoge"},
+			want:  anyTest{Usagi: "hoge"},
+		},
+		"int in any fields": {
+			input: anyTest{Usagi: 2},
+			want:  anyTest{Usagi: 2},
+		},
+		"string struct in any fields": {
+			input: anyTest{Usagi: stringTest{"hoge"}},
+			want:  anyTest{Usagi: stringTest{"hoge"}},
+		},
+		"int struct in any fields": {
+			input: anyTest{Usagi: intTest{2}},
+			want:  anyTest{Usagi: intTest{2}},
+		},
+		"nil in any fields": {
+			input: anyTest{Usagi: nil},
+			want:  anyTest{Usagi: nil},
 		},
 	}
 
@@ -1155,7 +1177,7 @@ func allowUnexported(v any) cmp.Options {
 
 func getStructType(rt reflect.Type) (reflect.Type, bool) {
 	switch rt.Kind() {
-	case reflect.Interface, reflect.Ptr, reflect.Slice:
+	case reflect.Ptr, reflect.Slice:
 		return getStructType(rt.Elem())
 	case reflect.Struct:
 		return rt, true

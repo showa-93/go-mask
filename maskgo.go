@@ -183,6 +183,8 @@ func mask(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error)
 		return reflect.Zero(rv.Type()), nil
 	}
 	switch rv.Type().Kind() {
+	case reflect.Interface:
+		return maskInterface(rv, tag, mp)
 	case reflect.Ptr:
 		return maskPtr(rv, tag, mp)
 	case reflect.Struct:
@@ -203,6 +205,23 @@ func mask(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error)
 		}
 		return rv, nil
 	}
+}
+
+func maskInterface(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {
+	if rv.IsNil() {
+		return reflect.Zero(rv.Type()), nil
+	}
+
+	if !mp.IsValid() {
+		mp = reflect.New(rv.Type()).Elem()
+	}
+	rv2, err := mask(reflect.ValueOf(rv.Interface()), tag, reflect.Value{})
+	if err != nil {
+		return reflect.Value{}, err
+	}
+	mp.Set(rv2)
+
+	return mp, nil
 }
 
 func maskPtr(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {

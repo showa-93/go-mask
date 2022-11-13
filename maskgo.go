@@ -28,26 +28,26 @@ type storeStruct struct {
 }
 
 type (
-	maskStringFunc  func(arg string, value string) (string, error)
-	maskIntFunc     func(arg string, value int) (int, error)
-	maskFloat64Func func(arg string, value float64) (float64, error)
-	maskAnyFunc     func(arg string, value any) (any, error)
+	MaskStringFunc  func(arg string, value string) (string, error)
+	MaskIntFunc     func(arg string, value int) (int, error)
+	MaskFloat64Func func(arg string, value float64) (float64, error)
+	MaskAnyFunc     func(arg string, value any) (any, error)
 )
 
 var (
 	maskChar          = "*"
 	typeToStructMap   sync.Map
-	maskStringFuncMap = map[string]maskStringFunc{
+	maskStringFuncMap = map[string]MaskStringFunc{
 		MaskTypeFilled: maskFilledString,
 		MaskTypeHash:   maskHashString,
 	}
-	maskIntFuncMap = map[string]maskIntFunc{
+	maskIntFuncMap = map[string]MaskIntFunc{
 		MaskTypeRandom: maskRandomInt,
 	}
-	maskFloat64FuncMap = map[string]maskFloat64Func{
+	maskFloat64FuncMap = map[string]MaskFloat64Func{
 		MaskTypeRandom: maskRandomFloat64,
 	}
-	maskAnyFuncMap = map[string]maskAnyFunc{
+	maskAnyFuncMap = map[string]MaskAnyFunc{
 		MaskTypeZero: maskZero,
 	}
 )
@@ -60,20 +60,20 @@ func MaskChar() string {
 	return maskChar
 }
 
-func RegisterMaskStringFunc(maskType string, f maskStringFunc) {
-	maskStringFuncMap[maskType] = f
+func RegisterMaskStringFunc(maskType string, maskFunc MaskStringFunc) {
+	maskStringFuncMap[maskType] = maskFunc
 }
 
-func RegisterMaskIntFunc(maskType string, f maskIntFunc) {
-	maskIntFuncMap[maskType] = f
+func RegisterMaskIntFunc(maskType string, maskFunc MaskIntFunc) {
+	maskIntFuncMap[maskType] = maskFunc
 }
 
-func RegisterMaskFloat64Func(maskType string, f maskFloat64Func) {
-	maskFloat64FuncMap[maskType] = f
+func RegisterMaskFloat64Func(maskType string, maskFunc MaskFloat64Func) {
+	maskFloat64FuncMap[maskType] = maskFunc
 }
 
-func RegisterMaskAnyFunc(maskType string, f maskAnyFunc) {
-	maskAnyFuncMap[maskType] = f
+func RegisterMaskAnyFunc(maskType string, maskFunc MaskAnyFunc) {
+	maskAnyFuncMap[maskType] = maskFunc
 }
 
 func MaskString(tag, value string) (string, error) {

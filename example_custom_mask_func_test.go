@@ -9,6 +9,12 @@ import (
 	"github.com/showa-93/maskgo"
 )
 
+func init() {
+	maskTypeRegExp := "regexp"
+	maskgo.SetMaskChar("■")
+	maskgo.RegisterMaskStringFunc(maskTypeRegExp, MaskRegExp)
+}
+
 // MaskRegExp is sample to add a custom mask function
 func MaskRegExp(arg, value string) (string, error) {
 	var (
@@ -33,10 +39,6 @@ func MaskRegExp(arg, value string) (string, error) {
 }
 
 func Example_customMaskFunc() {
-	maskTypeRegExp := "regexp"
-	maskgo.SetMaskChar("■")
-	maskgo.RegisterMaskStringFunc(maskTypeRegExp, MaskRegExp)
-
 	type Hachiware struct {
 		Message string `mask:"regexp(最高)."`
 	}

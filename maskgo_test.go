@@ -924,6 +924,9 @@ func TestMaskRandom(t *testing.T) {
 	type intSlicePtrTest struct {
 		Usagi *[]int `mask:"random1000"`
 	}
+	type float32Test struct {
+		Usagi float32 `mask:"random100000.4"`
+	}
 	type float64Test struct {
 		Usagi float64 `mask:"random100000.4"`
 	}
@@ -1004,6 +1007,10 @@ func TestMaskRandom(t *testing.T) {
 		"nil int slice ptr fields": {
 			input: &intSlicePtrTest{},
 			want:  &intSlicePtrTest{Usagi: (*[]int)(nil)},
+		},
+		"float32 fields": {
+			input: &float32Test{Usagi: 20190122},
+			want:  &float32Test{Usagi: 96011.8989},
 		},
 		"float64 fields": {
 			input: &float64Test{Usagi: 20190122},

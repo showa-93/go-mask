@@ -11,7 +11,6 @@ import (
 
 func init() {
 	maskTypeRegExp := "regexp"
-	maskgo.SetMaskChar("■")
 	maskgo.RegisterMaskStringFunc(maskTypeRegExp, MaskRegExp)
 }
 
@@ -39,6 +38,7 @@ func MaskRegExp(arg, value string) (string, error) {
 }
 
 func Example_customMaskFunc() {
+	maskgo.SetMaskChar("■")
 	type Hachiware struct {
 		Message string `mask:"regexp(最高)."`
 	}

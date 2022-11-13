@@ -1,6 +1,7 @@
 package maskgo
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 
@@ -10,6 +11,30 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 )
+
+func Example() {
+	rand.Seed(12345)
+	type User struct {
+		ID   string
+		Name string `mask:"filled"`
+		Age  int    `mask:"random100"`
+	}
+
+	user := User{
+		ID:   "123456",
+		Name: "Usagi",
+		Age:  3,
+	}
+	maskUser, err := Mask(user)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("%+v", maskUser)
+
+	// Output:
+	// {ID:123456 Name:***** Age:83}
+}
 
 func TestMask_PrimitiveType(t *testing.T) {
 	tests := map[string]struct {

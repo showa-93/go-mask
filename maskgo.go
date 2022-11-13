@@ -31,6 +31,7 @@ type (
 	maskStringFunc  func(arg string, value string) (string, error)
 	maskIntFunc     func(arg string, value int) (int, error)
 	maskFloat64Func func(arg string, value float64) (float64, error)
+	maskAnyFunc     func(arg string, value any) (any, error)
 )
 
 var (
@@ -45,6 +46,9 @@ var (
 	}
 	maskFloat64FuncMap = map[string]maskFloat64Func{
 		MaskTypeRandom: maskRandomFloat64,
+	}
+	maskAnyFuncMap = map[string]maskAnyFunc{
+		MaskTypeZero: maskZero,
 	}
 )
 
@@ -68,12 +72,15 @@ func RegisterMaskFloat64Func(maskType string, f maskFloat64Func) {
 	maskFloat64FuncMap[maskType] = f
 }
 
+func RegisterMaskAnyFunc(maskType string, f maskAnyFunc) {
+	maskAnyFuncMap[maskType] = f
+}
+
 func MaskString(tag, value string) (string, error) {
 	if tag != "" {
-		if tag == MaskTypeZero {
-			return "", nil
+		if ok, v, err := maskAny(tag, value); ok {
+			return v.(string), err
 		}
-
 		for mt, maskStringFunc := range maskStringFuncMap {
 			if strings.HasPrefix(tag, mt) {
 				return maskStringFunc(tag[len(mt):], value)
@@ -86,10 +93,9 @@ func MaskString(tag, value string) (string, error) {
 
 func MaskInt(tag string, value int) (int, error) {
 	if tag != "" {
-		if tag == MaskTypeZero {
-			return 0, nil
+		if ok, v, err := maskAny(tag, value); ok {
+			return v.(int), err
 		}
-
 		for mt, maskIntFunc := range maskIntFuncMap {
 			if strings.HasPrefix(tag, mt) {
 				return maskIntFunc(tag[len(mt):], value)
@@ -102,10 +108,9 @@ func MaskInt(tag string, value int) (int, error) {
 
 func MaskFloat64(tag string, value float64) (float64, error) {
 	if tag != "" {
-		if tag == MaskTypeZero {
-			return 0, nil
+		if ok, v, err := maskAny(tag, value); ok {
+			return v.(float64), err
 		}
-
 		for mt, maskFloat64Func := range maskFloat64FuncMap {
 			if strings.HasPrefix(tag, mt) {
 				return maskFloat64Func(tag[len(mt):], value)
@@ -114,6 +119,32 @@ func MaskFloat64(tag string, value float64) (float64, error) {
 	}
 
 	return value, nil
+}
+
+func maskAny(tag string, value any) (bool, any, error) {
+	if tag != "" {
+		for mt, maskAnyFunc := range maskAnyFuncMap {
+			if strings.HasPrefix(tag, mt) {
+				v, err := maskAnyFunc(tag[len(mt):], value)
+				return true, v, err
+			}
+		}
+	}
+
+	return false, value, nil
+}
+
+func maskAnyValue(tag string, value reflect.Value) (bool, reflect.Value, error) {
+	if tag != "" {
+		for mt, maskAnyFunc := range maskAnyFuncMap {
+			if strings.HasPrefix(tag, mt) {
+				v, err := maskAnyFunc(tag[len(mt):], value.Interface())
+				return true, reflect.ValueOf(v), err
+			}
+		}
+	}
+
+	return false, value, nil
 }
 
 func maskFilledString(arg, value string) (string, error) {
@@ -166,6 +197,10 @@ func maskRandomFloat64(arg string, value float64) (float64, error) {
 	return x / dd, nil
 }
 
+func maskZero(arg string, value any) (any, error) {
+	return reflect.Zero(reflect.TypeOf(value)).Interface(), nil
+}
+
 func Mask(target any) (any, error) {
 	if target == nil {
 		return target, nil
@@ -179,8 +214,8 @@ func Mask(target any) (any, error) {
 }
 
 func mask(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {
-	if strings.HasPrefix(tag, MaskTypeZero) {
-		return reflect.Zero(rv.Type()), nil
+	if ok, v, err := maskAnyValue(tag, rv); ok {
+		return v, err
 	}
 	switch rv.Type().Kind() {
 	case reflect.Interface:

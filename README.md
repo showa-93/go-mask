@@ -1,6 +1,6 @@
 # go-mask
 
-[![Documentation](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/coredns/coredns)
+[![Documentation](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/showa-93/go-mask)
 ![Go Tests](https://github.com/coredns/coredns/actions/workflows/go.test.yml/badge.svg)
 [![codecov](https://codecov.io/gh/showa-93/go-mask/branch/main/graph/badge.svg)](https://codecov.io/gh/showa-93/go-mask)
 [![Go Report Card](https://goreportcard.com/badge/github.com/showa-93/go-mask)](https://goreportcard.com/report/github.com/showa-93/go-mask)

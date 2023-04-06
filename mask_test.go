@@ -14,16 +14,23 @@ import (
 
 func Example() {
 	rand.Seed(12345)
+	type Address struct {
+		PostCode string `mask:"zero"`
+	}
 	type User struct {
-		ID   string
-		Name string `mask:"filled"`
-		Age  int    `mask:"random100"`
+		ID      string
+		Name    string `mask:"filled"`
+		Age     int    `mask:"random100"`
+		Address Address
 	}
 
 	user := User{
 		ID:   "123456",
 		Name: "Usagi",
 		Age:  3,
+		Address: Address{
+			PostCode: "123-4567",
+		},
 	}
 	maskUser, err := Mask(user)
 	if err != nil {
@@ -33,7 +40,28 @@ func Example() {
 	fmt.Printf("%+v", maskUser)
 
 	// Output:
-	// {ID:123456 Name:***** Age:83}
+	// {ID:123456 Name:***** Age:83 Address:{PostCode:}}
+}
+
+type BenchTarget struct {
+	I int    `mask:"zero"`
+	S string `mask:"filled"`
+	B *BenchTarget
+}
+
+func BenchmarkMask(b *testing.B) {
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		v := BenchTarget{
+			I: 1,
+			S: "Hello World",
+			B: &BenchTarget{
+				I: 2,
+				S: "Hello World2",
+			},
+		}
+		Mask(v)
+	}
 }
 
 func TestMask_PrimitiveType(t *testing.T) {

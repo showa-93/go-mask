@@ -1,4 +1,4 @@
-package maskgo
+package mask
 
 import (
 	"fmt"
@@ -529,7 +529,6 @@ func TestMask_CompositeType(t *testing.T) {
 	}
 }
 
-func TestMaskString(t *testing.T) {
 	tests := map[string]struct {
 		tag   string
 		input string
@@ -560,7 +559,6 @@ func TestMaskString(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			defer cleanup(t)
-			got, err := MaskString(tt.tag, tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Error(diff)
@@ -569,7 +567,6 @@ func TestMaskString(t *testing.T) {
 	}
 }
 
-func TestMaskInt(t *testing.T) {
 	tests := map[string]struct {
 		tag     string
 		input   int
@@ -612,7 +609,6 @@ func TestMaskInt(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			rand.Seed(rand.NewSource(1).Int63())
 			defer cleanup(t)
-			got, err := MaskInt(tt.tag, tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -625,7 +621,6 @@ func TestMaskInt(t *testing.T) {
 	}
 }
 
-func TestMaskFloat64(t *testing.T) {
 	tests := map[string]struct {
 		tag     string
 		input   float64
@@ -678,7 +673,6 @@ func TestMaskFloat64(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			rand.Seed(rand.NewSource(1).Int63())
 			defer cleanup(t)
-			got, err := MaskFloat64(tt.tag, tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

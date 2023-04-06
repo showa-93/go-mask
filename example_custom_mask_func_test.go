@@ -1,4 +1,4 @@
-package maskgo_test
+package mask_test
 
 import (
 	"fmt"
@@ -6,12 +6,12 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/showa-93/maskgo"
+	mask "github.com/showa-93/maskgo"
 )
 
 func init() {
 	maskTypeRegExp := "regexp"
-	maskgo.RegisterMaskStringFunc(maskTypeRegExp, MaskRegExp)
+	mask.RegisterMaskStringFunc(maskTypeRegExp, MaskRegExp)
 }
 
 // MaskRegExp is sample to add a custom mask function
@@ -29,7 +29,7 @@ func MaskRegExp(arg, value string) (string, error) {
 	if len(indexes) >= 4 && indexes[2] >= 0 && indexes[3] >= 0 {
 		var sb strings.Builder
 		sb.WriteString(value[:indexes[2]])
-		sb.WriteString(strings.Repeat(maskgo.MaskChar(), utf8.RuneCountInString(value[indexes[2]:indexes[3]])))
+		sb.WriteString(strings.Repeat(mask.MaskChar(), utf8.RuneCountInString(value[indexes[2]:indexes[3]])))
 		sb.WriteString(value[indexes[3]:])
 		return sb.String(), nil
 	}
@@ -38,13 +38,13 @@ func MaskRegExp(arg, value string) (string, error) {
 }
 
 func Example_customMaskFunc() {
-	maskgo.SetMaskChar("■")
+	mask.SetMaskChar("■")
 	type Hachiware struct {
 		Message string `mask:"regexp(最高)."`
 	}
 
 	input := Hachiware{Message: "これって…最高じゃん"}
-	got, _ := maskgo.Mask(input)
+	got, _ := mask.Mask(input)
 	fmt.Printf("\"%s\", Hachiware says\n", got.(Hachiware).Message)
 
 	// Output:

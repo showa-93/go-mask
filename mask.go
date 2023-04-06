@@ -13,8 +13,10 @@ import (
 	"github.com/goccy/go-reflect"
 )
 
+// Tag name of the field in the structure when masking
 const tagName = "mask"
 
+// Default tag that can be specified as a mask
 const (
 	MaskTypeFilled = "filled"
 	MaskTypeRandom = "random"
@@ -27,6 +29,7 @@ type storeStruct struct {
 	structFields []reflect.StructField
 }
 
+// Function type that must be satisfied to add a custom mask
 type (
 	MaskStringFunc  func(arg string, value string) (string, error)
 	MaskIntFunc     func(arg string, value int) (int, error)
@@ -52,30 +55,41 @@ var (
 	}
 )
 
+// SetMaskChar changes the character used for masking
 func SetMaskChar(s string) {
 	maskChar = s
 }
 
+// MaskChar returns the current character used for masking.
 func MaskChar() string {
 	return maskChar
 }
 
+// RegisterMaskStringFunc registers a masking function for string values.
+// The function will be applied when the string set in the first argument is assigned as a tag to a field in the structure.
 func RegisterMaskStringFunc(maskType string, maskFunc MaskStringFunc) {
 	maskStringFuncMap[maskType] = maskFunc
 }
 
+// RegisterMaskIntFunc registers a masking function for int values.
+// The function will be applied when the string set in the first argument is assigned as a tag to a field in the structure.
 func RegisterMaskIntFunc(maskType string, maskFunc MaskIntFunc) {
 	maskIntFuncMap[maskType] = maskFunc
 }
 
+// RegisterMaskFloat64Func registers a masking function for float64 values.
+// The function will be applied when the string set in the first argument is assigned as a tag to a field in the structure.
 func RegisterMaskFloat64Func(maskType string, maskFunc MaskFloat64Func) {
 	maskFloat64FuncMap[maskType] = maskFunc
 }
 
+// RegisterMaskAnyFunc registers a masking function that can be applied to any type.
+// The function will be applied when the string set in the first argument is assigned as a tag to a field in the structure.
 func RegisterMaskAnyFunc(maskType string, maskFunc MaskAnyFunc) {
 	maskAnyFuncMap[maskType] = maskFunc
 }
 
+// String masks the given argument string
 func String(tag, value string) (string, error) {
 	if tag != "" {
 		if ok, v, err := maskAny(tag, value); ok {
@@ -91,6 +105,7 @@ func String(tag, value string) (string, error) {
 	return value, nil
 }
 
+// Int masks the given argument int
 func Int(tag string, value int) (int, error) {
 	if tag != "" {
 		if ok, v, err := maskAny(tag, value); ok {
@@ -106,6 +121,7 @@ func Int(tag string, value int) (int, error) {
 	return value, nil
 }
 
+// Float64 masks the given argument float64
 func Float64(tag string, value float64) (float64, error) {
 	if tag != "" {
 		if ok, v, err := maskAny(tag, value); ok {
@@ -201,6 +217,8 @@ func maskZero(arg string, value any) (any, error) {
 	return reflect.Zero(reflect.TypeOf(value)).Interface(), nil
 }
 
+// Mask returns an object with the mask applied to any given object.
+// The function's argument can accept any type, including pointer, map, and slice types, in addition to struct.
 func Mask(target any) (any, error) {
 	if target == nil {
 		return target, nil

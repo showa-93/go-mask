@@ -19,6 +19,7 @@ const tagName = "mask"
 // Default tag that can be specified as a mask
 const (
 	MaskTypeFilled = "filled"
+	MaskTypeFixed  = "fixed"
 	MaskTypeRandom = "random"
 	MaskTypeHash   = "hash"
 	MaskTypeZero   = "zero"
@@ -42,6 +43,7 @@ var (
 	typeToStructMap   sync.Map
 	maskStringFuncMap = map[string]MaskStringFunc{
 		MaskTypeFilled: maskFilledString,
+		MaskTypeFixed:  maskFixedString,
 		MaskTypeHash:   maskHashString,
 	}
 	maskIntFuncMap = map[string]MaskIntFunc{
@@ -174,6 +176,10 @@ func maskFilledString(arg, value string) (string, error) {
 	}
 
 	return strings.Repeat(MaskChar(), utf8.RuneCountInString(value)), nil
+}
+
+func maskFixedString(arg, value string) (string, error) {
+	return strings.Repeat(MaskChar(), 8), nil
 }
 
 func maskHashString(arg, value string) (string, error) {

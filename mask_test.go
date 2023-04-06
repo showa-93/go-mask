@@ -790,6 +790,37 @@ func TestMaskFilled(t *testing.T) {
 	}
 }
 
+func TestMaskFixed(t *testing.T) {
+	type stringTest struct {
+		Usagi string `mask:"fixed"`
+	}
+
+	tests := map[string]struct {
+		input any
+		want  any
+	}{
+		"string fields": {
+			input: &stringTest{Usagi: "ヤハッ！！！"},
+			want:  &stringTest{Usagi: "********"},
+		},
+		"zero string fields": {
+			input: &stringTest{},
+			want:  &stringTest{Usagi: ""},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			defer cleanup(t)
+			got, err := Mask(tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
+			}
+		})
+	}
+}
+
 func TestMaskHashString(t *testing.T) {
 	type stringTest struct {
 		Usagi string `mask:"hash"`

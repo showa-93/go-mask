@@ -76,6 +76,7 @@ func RegisterMaskAnyFunc(maskType string, maskFunc MaskAnyFunc) {
 	maskAnyFuncMap[maskType] = maskFunc
 }
 
+func String(tag, value string) (string, error) {
 	if tag != "" {
 		if ok, v, err := maskAny(tag, value); ok {
 			return v.(string), err
@@ -90,6 +91,7 @@ func RegisterMaskAnyFunc(maskType string, maskFunc MaskAnyFunc) {
 	return value, nil
 }
 
+func Int(tag string, value int) (int, error) {
 	if tag != "" {
 		if ok, v, err := maskAny(tag, value); ok {
 			return v.(int), err
@@ -104,6 +106,7 @@ func RegisterMaskAnyFunc(maskType string, maskFunc MaskAnyFunc) {
 	return value, nil
 }
 
+func Float64(tag string, value float64) (float64, error) {
 	if tag != "" {
 		if ok, v, err := maskAny(tag, value); ok {
 			return v.(float64), err
@@ -324,6 +327,7 @@ func maskSlice(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, e
 	switch rv.Type().Elem().Kind() {
 	case reflect.String:
 		for i, str := range rv.Interface().([]string) {
+			rvf, err := String(tag, str)
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -331,6 +335,7 @@ func maskSlice(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, e
 		}
 	case reflect.Int:
 		for i, v := range rv.Interface().([]int) {
+			rvf, err := Int(tag, v)
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -338,6 +343,7 @@ func maskSlice(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, e
 		}
 	case reflect.Float64:
 		for i, v := range rv.Interface().([]float64) {
+			rvf, err := Float64(tag, v)
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -396,6 +402,7 @@ func maskAnyKeykMap(rv reflect.Value, tag string) (reflect.Value, error) {
 		iter := rv.MapRange()
 		for iter.Next() {
 			key, value := iter.Key(), iter.Value()
+			rvf, err := String(tag, value.String())
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -405,6 +412,7 @@ func maskAnyKeykMap(rv reflect.Value, tag string) (reflect.Value, error) {
 		iter := rv.MapRange()
 		for iter.Next() {
 			key, value := iter.Key(), iter.Value()
+			rvf, err := Int(tag, int(value.Int()))
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -414,6 +422,7 @@ func maskAnyKeykMap(rv reflect.Value, tag string) (reflect.Value, error) {
 		iter := rv.MapRange()
 		for iter.Next() {
 			key, value := iter.Key(), iter.Value()
+			rvf, err := Float64(tag, value.Float())
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -439,6 +448,7 @@ func maskStringKeyMap(rv reflect.Value, tag string) (reflect.Value, error) {
 	case reflect.String:
 		m := make(map[string]string, rv.Len())
 		for k, v := range rv.Interface().(map[string]string) {
+			rvf, err := String(tag, v)
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -449,6 +459,7 @@ func maskStringKeyMap(rv reflect.Value, tag string) (reflect.Value, error) {
 	case reflect.Int:
 		m := make(map[string]int, rv.Len())
 		for k, v := range rv.Interface().(map[string]int) {
+			rvf, err := Int(tag, v)
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -458,6 +469,7 @@ func maskStringKeyMap(rv reflect.Value, tag string) (reflect.Value, error) {
 	case reflect.Float64:
 		m := make(map[string]float64, rv.Len())
 		for k, v := range rv.Interface().(map[string]float64) {
+			rvf, err := Float64(tag, v)
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -479,6 +491,7 @@ func maskString(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, 
 		return rv, nil
 	}
 
+	sp, err := String(tag, rv.String())
 	if err != nil {
 		return reflect.Value{}, err
 	}
@@ -499,6 +512,7 @@ func maskInt(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, err
 		return rv, nil
 	}
 
+	ip, err := Int(tag, int(rv.Int()))
 	if err != nil {
 		return reflect.Value{}, err
 	}
@@ -523,6 +537,7 @@ func maskfloat(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, e
 		return rv, nil
 	}
 
+	fp, err := Float64(tag, rv.Float())
 	if err != nil {
 		return reflect.Value{}, err
 	}

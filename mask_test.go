@@ -529,6 +529,7 @@ func TestMask_CompositeType(t *testing.T) {
 	}
 }
 
+func TestString(t *testing.T) {
 	tests := map[string]struct {
 		tag   string
 		input string
@@ -559,6 +560,7 @@ func TestMask_CompositeType(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			defer cleanup(t)
+			got, err := String(tt.tag, tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Error(diff)
@@ -567,6 +569,7 @@ func TestMask_CompositeType(t *testing.T) {
 	}
 }
 
+func TestInt(t *testing.T) {
 	tests := map[string]struct {
 		tag     string
 		input   int
@@ -609,6 +612,7 @@ func TestMask_CompositeType(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			rand.Seed(rand.NewSource(1).Int63())
 			defer cleanup(t)
+			got, err := Int(tt.tag, tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -621,6 +625,7 @@ func TestMask_CompositeType(t *testing.T) {
 	}
 }
 
+func TestFloat64(t *testing.T) {
 	tests := map[string]struct {
 		tag     string
 		input   float64
@@ -673,6 +678,7 @@ func TestMask_CompositeType(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			rand.Seed(rand.NewSource(1).Int63())
 			defer cleanup(t)
+			got, err := Float64(tt.tag, tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

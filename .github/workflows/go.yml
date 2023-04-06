@@ -1,0 +1,31 @@
+name: Go Coverage
+on: [push]
+
+jobs:
+  test:
+    name: Coverage
+    strategy:
+      matrix:
+        go-version:
+          - '1.19'
+          - '1.20'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Go ${{ matrix.go-version }}
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Check out code
+      uses: actions/checkout@v3
+      with:
+        path: main
+
+    - name: Test with coverage
+      run: go test -v -coverprofile="coverage.out" ./
+
+    - name: Upload coverage to Codecov
+      uses:  codecov/codecov-action@v3
+      with:
+        file: ./coverage.out
+        fail_ci_if_error: true

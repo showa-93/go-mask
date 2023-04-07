@@ -44,9 +44,16 @@ func Example() {
 }
 
 type BenchTarget struct {
-	I int    `mask:"zero"`
-	S string `mask:"filled"`
-	B *BenchTarget
+	I  int               `mask:"zero"`
+	S  string            `mask:"filled"`
+	M  map[string]string `mask:"filled"`
+	SS []string          `mask:"filled"`
+	B  *BenchTarget2
+}
+
+type BenchTarget2 struct {
+	I int    `mask:"random100"`
+	S string `mask:"fixed"`
 }
 
 func BenchmarkMask(b *testing.B) {
@@ -55,7 +62,16 @@ func BenchmarkMask(b *testing.B) {
 		v := BenchTarget{
 			I: 1,
 			S: "Hello World",
-			B: &BenchTarget{
+			M: map[string]string{
+				"Hoge": "Fuga",
+				"Bob":  "Alica",
+			},
+			SS: []string{
+				"One",
+				"Two",
+				"Three",
+			},
+			B: &BenchTarget2{
 				I: 2,
 				S: "Hello World2",
 			},

@@ -189,13 +189,13 @@ func (m *Masker) RegisterMaskAnyFunc(maskType string, maskFunc MaskAnyFunc) {
 // String masks the given argument string
 func (m *Masker) String(tag, value string) (string, error) {
 	if tag != "" {
-		if ok, v, err := m.maskAny(tag, value); ok {
-			return v.(string), err
-		}
 		for mt, maskStringFunc := range m.maskStringFuncMap {
 			if strings.HasPrefix(tag, mt) {
 				return maskStringFunc(tag[len(mt):], value)
 			}
+		}
+		if ok, v, err := m.maskAny(tag, value); ok {
+			return v.(string), err
 		}
 	}
 
@@ -205,13 +205,13 @@ func (m *Masker) String(tag, value string) (string, error) {
 // Int masks the given argument int
 func (m *Masker) Int(tag string, value int) (int, error) {
 	if tag != "" {
-		if ok, v, err := m.maskAny(tag, value); ok {
-			return v.(int), err
-		}
 		for mt, maskIntFunc := range m.maskIntFuncMap {
 			if strings.HasPrefix(tag, mt) {
 				return maskIntFunc(tag[len(mt):], value)
 			}
+		}
+		if ok, v, err := m.maskAny(tag, value); ok {
+			return v.(int), err
 		}
 	}
 
@@ -221,13 +221,13 @@ func (m *Masker) Int(tag string, value int) (int, error) {
 // Float64 masks the given argument float64
 func (m *Masker) Float64(tag string, value float64) (float64, error) {
 	if tag != "" {
-		if ok, v, err := m.maskAny(tag, value); ok {
-			return v.(float64), err
-		}
 		for mt, maskFloat64Func := range m.maskFloat64FuncMap {
 			if strings.HasPrefix(tag, mt) {
 				return maskFloat64Func(tag[len(mt):], value)
 			}
+		}
+		if ok, v, err := m.maskAny(tag, value); ok {
+			return v.(float64), err
 		}
 	}
 

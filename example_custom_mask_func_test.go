@@ -45,7 +45,7 @@ func Example_customMaskFunc() {
 
 	input := Hachiware{Message: "これって…最高じゃん"}
 	got, _ := mask.Mask(input)
-	fmt.Printf("\"%s\", Hachiware says\n", got.(Hachiware).Message)
+	fmt.Printf("\"%s\", Hachiware says\n", got.Message)
 
 	// Output:
 	// "これって…■■じゃん", Hachiware says

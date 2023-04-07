@@ -225,16 +225,13 @@ func maskZero(arg string, value any) (any, error) {
 
 // Mask returns an object with the mask applied to any given object.
 // The function's argument can accept any type, including pointer, map, and slice types, in addition to struct.
-func Mask(target any) (any, error) {
-	if target == nil {
-		return target, nil
-	}
+func Mask[T any](target T) (ret T, err error) {
 	rv, err := mask(reflect.ValueOf(target), "", reflect.Value{})
 	if err != nil {
-		return nil, err
+		return ret, err
 	}
 
-	return rv.Interface(), nil
+	return rv.Interface().(T), nil
 }
 
 func mask(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {

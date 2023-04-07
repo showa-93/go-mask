@@ -28,6 +28,7 @@ This is because it is believed that users should create their own necessary mask
 | tag | type | description |
 | :-- | :-- | :-- |
 | mask:"filled" | string | Masks the string with the same number of masking characters. |
+| mask:"filledXXX" | string | XXX = number of masking characters. Masks with a fixed number of characters. `mask:"filled3"`→`***` |
 | mask:"fixed" | string | Masks with a fixed number of characters. `*******` |
 | mask:"hash" | string | Masks the string by converting it to a value using sha1. |
 | mask:"randomXXX" | int / float64 | XXX = numeric value. Masks with a random value in the range of 0 to the XXX. |

@@ -12,6 +12,7 @@ go-mask is a simple, customizable Go library for masking sensitive information.
 - You can mask any field of a structure using the struct's tags
 - Users can make use of their own custom-created masking functions
 - The masked object is a copied object, so it does not overwrite the original data before masking(although it's not perfect...)
+  - Private fields are not copied
 
 ## Installation
 
@@ -180,7 +181,7 @@ func main() {
 	}
 	maskNode, _ := mask.Mask(node)
 	fmt.Printf("first=%+v,second=%+v,third=%+v\n", node, node.Next, node.Next.Next)
-	fmt.Printf("first=%+v,second=%+v,third=%+v\n", maskNode.(Node), maskNode.(Node).Next, maskNode.(Node).Next.Next)
+	fmt.Printf("first=%+v,second=%+v,third=%+v\n", maskNode, maskNode.Next, maskNode.Next.Next)
 }
 ```
 ```

@@ -160,9 +160,18 @@ func TestMask_PrimitiveType(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
+		t.Run(defaultTestCase(name), func(t *testing.T) {
 			defer cleanup(t)
 			got, err := Mask(tt.input)
+			if assert.NoError(t, err) {
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Error(diff)
+				}
+			}
+		})
+		t.Run(newMaskerTestCase(name), func(t *testing.T) {
+			m := NewMasker()
+			got, err := m.Mask(tt.input)
 			if assert.NoError(t, err) {
 				if diff := cmp.Diff(tt.want, got); diff != "" {
 					t.Error(diff)
@@ -546,9 +555,17 @@ func TestMask_CompositeType(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
+		t.Run(defaultTestCase(name), func(t *testing.T) {
 			defer cleanup(t)
 			got, err := Mask(tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
+			}
+		})
+		t.Run(newMaskerTestCase(name), func(t *testing.T) {
+			m := NewMasker()
+			got, err := m.Mask(tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
 				t.Error(diff)
@@ -586,9 +603,17 @@ func TestString(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
+		t.Run(defaultTestCase(name), func(t *testing.T) {
 			defer cleanup(t)
 			got, err := String(tt.tag, tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Error(diff)
+			}
+		})
+		t.Run(newMaskerTestCase(name), func(t *testing.T) {
+			m := NewMasker()
+			got, err := m.String(tt.tag, tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Error(diff)
@@ -637,10 +662,23 @@ func TestInt(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
+		t.Run(defaultTestCase(name), func(t *testing.T) {
 			rand.Seed(rand.NewSource(1).Int63())
 			defer cleanup(t)
 			got, err := Int(tt.tag, tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Error(diff)
+				}
+			}
+		})
+		t.Run(newMaskerTestCase(name), func(t *testing.T) {
+			rand.Seed(rand.NewSource(1).Int63())
+			m := NewMasker()
+			got, err := m.Int(tt.tag, tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -703,10 +741,23 @@ func TestFloat64(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
+		t.Run(defaultTestCase(name), func(t *testing.T) {
 			rand.Seed(rand.NewSource(1).Int63())
 			defer cleanup(t)
 			got, err := Float64(tt.tag, tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Error(diff)
+				}
+			}
+		})
+		t.Run(newMaskerTestCase(name), func(t *testing.T) {
+			rand.Seed(rand.NewSource(1).Int63())
+			m := NewMasker()
+			got, err := m.Float64(tt.tag, tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -807,9 +858,17 @@ func TestMaskFilled(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
+		t.Run(defaultTestCase(name), func(t *testing.T) {
 			defer cleanup(t)
 			got, err := Mask(tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
+			}
+		})
+		t.Run(newMaskerTestCase(name), func(t *testing.T) {
+			m := NewMasker()
+			got, err := m.Mask(tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
 				t.Error(diff)
@@ -838,9 +897,17 @@ func TestMaskFixed(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
+		t.Run(defaultTestCase(name), func(t *testing.T) {
 			defer cleanup(t)
 			got, err := Mask(tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
+			}
+		})
+		t.Run(newMaskerTestCase(name), func(t *testing.T) {
+			m := NewMasker()
+			got, err := m.Mask(tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
 				t.Error(diff)
@@ -943,9 +1010,18 @@ func TestMaskHashString(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
+		t.Run(defaultTestCase(name), func(t *testing.T) {
 			defer cleanup(t)
 			got, err := Mask(tt.input)
+			assert.Nil(t, err)
+
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
+			}
+		})
+		t.Run(newMaskerTestCase(name), func(t *testing.T) {
+			m := NewMasker()
+			got, err := m.Mask(tt.input)
 			assert.Nil(t, err)
 
 			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
@@ -1122,7 +1198,7 @@ func TestMaskRandom(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
+		t.Run(defaultTestCase(name), func(t *testing.T) {
 			defer cleanup(t)
 			rand.Seed(rand.NewSource(1).Int63())
 			got, err := Mask(tt.input)
@@ -1130,6 +1206,16 @@ func TestMaskRandom(t *testing.T) {
 				if diff := cmp.Diff(tt.want, got, cmpopts.SortMaps(func(i, j string) bool { return i < j })); diff != "" {
 					t.Error(diff)
 				}
+			}
+		})
+
+		t.Run(newMaskerTestCase(name), func(t *testing.T) {
+			rand.Seed(rand.NewSource(1).Int63())
+			m := NewMasker()
+			got, err := m.Mask(tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
 			}
 		})
 	}
@@ -1243,10 +1329,20 @@ func TestMaskZero(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
+		t.Run(defaultTestCase(name), func(t *testing.T) {
 			defer cleanup(t)
 			rand.Seed(rand.NewSource(1).Int63())
 			got, err := Mask(tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
+			}
+		})
+
+		t.Run(newMaskerTestCase(name), func(t *testing.T) {
+			rand.Seed(rand.NewSource(1).Int63())
+			m := NewMasker()
+			got, err := m.Mask(tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
 				t.Error(diff)
@@ -1325,10 +1421,17 @@ func convertAnyPtr(v any) *any {
 	return &v
 }
 
+func defaultTestCase(name string) string {
+	return "default Masker:" + name
+}
+func newMaskerTestCase(name string) string {
+	return "NewMasker:" + name
+}
+
 func cleanup(t *testing.T) {
 	t.Helper()
-	typeToStructMap.Range(func(key, _ any) bool {
-		typeToStructMap.Delete(key)
+	defaultMasker.typeToStructMap.Range(func(key, _ any) bool {
+		defaultMasker.typeToStructMap.Delete(key)
 		return false
 	})
 }

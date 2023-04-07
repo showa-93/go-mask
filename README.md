@@ -62,9 +62,15 @@ func main() {
 				"Leonardo Wilhelm DiCaprio",
 			},
 		}
+		masker := mask.NewMasker()
+		masker.SetMaskChar("-")
+
 		maskValue, _ := mask.Mask(value)
+		maskValue2, _ := masker.Mask(value)
+
 		fmt.Printf("%+v\n", value)
 		fmt.Printf("%+v\n", maskValue)
+		fmt.Printf("%+v\n", maskValue2)
 	}
 }
 ```
@@ -72,6 +78,7 @@ func main() {
 ********
 {Title:Catch Me If You Can Casts:[Thomas Jeffrey "Tom" Hanks Leonardo Wilhelm DiCaprio]}
 {Title:******************* Casts:[******** ********]}
+{Title:------------------- Casts:[-------- --------]}
 ```
 
 ### int / float64
@@ -103,16 +110,21 @@ func main() {
 			Price:   300,
 			Percent: 0.80,
 		}
+		masker := mask.NewMasker()
+
 		maskValue, _ := mask.Mask(value)
+		maskValue2, _ := masker.Mask(value)
+
 		fmt.Printf("%+v\n", maskValue)
+		fmt.Printf("%+v\n", maskValue2)
 	}
 }
-
 ```
 ```
-70
-85.12
-{Price:375 Percent:0.653}
+29
+50.45
+{Price:917 Percent:0.183}
+{Price:733 Percent:0.241}
 ```
 
 ### slice
@@ -142,15 +154,21 @@ func main() {
 			Type: 2,
 		},
 	}
+	masker := mask.NewMasker()
+	masker.SetMaskChar("+")
 
 	maskValues, _ := mask.Mask(values)
-  fmt.Printf("%+v\n", values)
+	maskValues2, _ := masker.Mask(values)
+
+	fmt.Printf("%+v\n", values)
 	fmt.Printf("%+v\n", maskValues)
+	fmt.Printf("%+v\n", maskValues2)
 }
 ```
 ```
 [{Name:Thomas Jeffrey "Tom" Hanks Type:1} {Name:Leonardo Wilhelm DiCaprio Type:2}]
-[{Name:************************** Type:7} {Name:************************* Type:0}]
+[{Name:************************** Type:8} {Name:************************* Type:9}]
+[{Name:++++++++++++++++++++++++++ Type:4} {Name:+++++++++++++++++++++++++ Type:8}]
 ```
 
 ### nested struct
@@ -179,14 +197,22 @@ func main() {
 			},
 		},
 	}
+
+	masker := mask.NewMasker()
+	masker.SetMaskChar("🤗")
+
 	maskNode, _ := mask.Mask(node)
+	maskNode2, _ := masker.Mask(node)
+
 	fmt.Printf("first=%+v,second=%+v,third=%+v\n", node, node.Next, node.Next.Next)
 	fmt.Printf("first=%+v,second=%+v,third=%+v\n", maskNode, maskNode.Next, maskNode.Next.Next)
+	fmt.Printf("first=%+v,second=%+v,third=%+v\n", maskNode2.(Node), maskNode2.(Node).Next, maskNode2.(Node).Next.Next)
 }
 ```
 ```
 first={Value:first Next:0xc000010048},second=&{Value:second Next:0xc000010060},third=&{Value:third Next:<nil>}
 first={Value:***** Next:0xc0000100a8},second=&{Value:****** Next:0xc0000100c0},third=&{Value:***** Next:<nil>}
+first={Value:🤗🤗🤗🤗🤗 Next:0xc000010120},second=&{Value:🤗🤗🤗🤗🤗🤗 Next:0xc000010138},third=&{Value:🤗🤗🤗🤗🤗 Next:<nil>}
 ```
 
 ### custom mask function
@@ -240,9 +266,17 @@ func main() {
 	got, _ := mask.Mask(input)
 	fmt.Printf("%+v\n", input)
 	fmt.Printf("%+v\n", got)
+
+	// The Masker initialized with NewMasker does not have
+	// any custom masking functions registered, so no masking will occur
+	masker := mask.NewMasker()
+	got2, _ := masker.Mask(input)
+	fmt.Printf("%+v\n", got2)
 }
+
 ```
 ```
 {Message:I love gopher!}
 {Message:I love cat!}
+{Message:I love gopher!}
 ```

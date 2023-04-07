@@ -171,6 +171,50 @@ func main() {
 [{Name:++++++++++++++++++++++++++ Type:4} {Name:+++++++++++++++++++++++++ Type:8}]
 ```
 
+### map
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/showa-93/go-mask"
+)
+
+type Value struct {
+	Name string `mask:"filled"`
+	Type int    `mask:"random10"`
+}
+
+func main() {
+	values := map[string]Value{
+		"one": {
+			Name: "Thomas Jeffrey \"Tom\" Hanks",
+			Type: 1,
+		},
+		"two": {
+			Name: "Leonardo Wilhelm DiCaprio",
+			Type: 2,
+		},
+	}
+	masker := mask.NewMasker()
+	masker.SetMaskChar("")
+
+	maskValues, _ := mask.Mask(values)
+	maskValues2, _ := masker.Mask(values)
+
+	fmt.Printf("%+v\n", values)
+	fmt.Printf("%+v\n", maskValues)
+	fmt.Printf("%+v\n", maskValues2)
+}
+```
+```
+map[one:{Name:Thomas Jeffrey "Tom" Hanks Type:1} two:{Name:Leonardo Wilhelm DiCaprio Type:2}]
+map[one:{Name:************************** Type:4} two:{Name:************************* Type:8}]
+map[one:{Name:++++++++++++++++++++++++++ Type:2} two:{Name:+++++++++++++++++++++++++ Type:3}]
+```
+
 ### nested struct
 
 ```go

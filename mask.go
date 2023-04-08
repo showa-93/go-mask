@@ -113,22 +113,31 @@ func Float64(tag string, value float64) (float64, error) {
 
 // Masker is a struct that defines the masking process.
 type Masker struct {
-	maskChar           string
-	typeToStructMap    sync.Map
-	maskStringFuncMap  map[string]MaskStringFunc
-	maskIntFuncMap     map[string]MaskIntFunc
-	maskFloat64FuncMap map[string]MaskFloat64Func
-	maskAnyFuncMap     map[string]MaskAnyFunc
+	maskChar        string
+	typeToStructMap sync.Map
+
+	maskStringFuncKeys  []string
+	maskStringFuncMap   map[string]MaskStringFunc
+	maskIntFuncKeys     []string
+	maskIntFuncMap      map[string]MaskIntFunc
+	maskFloat64FuncKeys []string
+	maskFloat64FuncMap  map[string]MaskFloat64Func
+	maskAnyFuncKeys     []string
+	maskAnyFuncMap      map[string]MaskAnyFunc
 }
 
 // NewMasker initializes a Masker.
 func NewMasker() *Masker {
 	m := &Masker{
-		maskChar:           "*",
-		maskStringFuncMap:  make(map[string]MaskStringFunc),
-		maskIntFuncMap:     make(map[string]MaskIntFunc),
-		maskFloat64FuncMap: make(map[string]MaskFloat64Func),
-		maskAnyFuncMap:     make(map[string]MaskAnyFunc),
+		maskChar:            "*",
+		maskStringFuncKeys:  make([]string, 0, 10),
+		maskStringFuncMap:   make(map[string]MaskStringFunc),
+		maskIntFuncKeys:     make([]string, 0, 10),
+		maskIntFuncMap:      make(map[string]MaskIntFunc),
+		maskFloat64FuncKeys: make([]string, 0, 10),
+		maskFloat64FuncMap:  make(map[string]MaskFloat64Func),
+		maskAnyFuncKeys:     make([]string, 0, 10),
+		maskAnyFuncMap:      make(map[string]MaskAnyFunc),
 	}
 	m.RegisterMaskStringFunc(MaskTypeFilled, m.maskFilledString)
 	m.RegisterMaskStringFunc(MaskTypeFixed, m.maskFixedString)
@@ -156,6 +165,9 @@ func (m *Masker) RegisterMaskStringFunc(maskType string, maskFunc MaskStringFunc
 	if m.maskStringFuncMap == nil {
 		m.maskStringFuncMap = make(map[string]MaskStringFunc)
 	}
+	if _, ok := m.maskStringFuncMap[maskType]; !ok {
+		m.maskStringFuncKeys = append(m.maskStringFuncKeys, maskType)
+	}
 	m.maskStringFuncMap[maskType] = maskFunc
 }
 
@@ -164,6 +176,9 @@ func (m *Masker) RegisterMaskStringFunc(maskType string, maskFunc MaskStringFunc
 func (m *Masker) RegisterMaskIntFunc(maskType string, maskFunc MaskIntFunc) {
 	if m.maskIntFuncMap == nil {
 		m.maskIntFuncMap = make(map[string]MaskIntFunc)
+	}
+	if _, ok := m.maskIntFuncMap[maskType]; !ok {
+		m.maskIntFuncKeys = append(m.maskIntFuncKeys, maskType)
 	}
 	m.maskIntFuncMap[maskType] = maskFunc
 }
@@ -174,6 +189,9 @@ func (m *Masker) RegisterMaskFloat64Func(maskType string, maskFunc MaskFloat64Fu
 	if m.maskFloat64FuncMap == nil {
 		m.maskFloat64FuncMap = make(map[string]MaskFloat64Func)
 	}
+	if _, ok := m.maskFloat64FuncMap[maskType]; !ok {
+		m.maskFloat64FuncKeys = append(m.maskFloat64FuncKeys, maskType)
+	}
 	m.maskFloat64FuncMap[maskType] = maskFunc
 }
 
@@ -183,15 +201,18 @@ func (m *Masker) RegisterMaskAnyFunc(maskType string, maskFunc MaskAnyFunc) {
 	if m.maskAnyFuncMap == nil {
 		m.maskAnyFuncMap = make(map[string]MaskAnyFunc)
 	}
+	if _, ok := m.maskAnyFuncMap[maskType]; !ok {
+		m.maskAnyFuncKeys = append(m.maskAnyFuncKeys, maskType)
+	}
 	m.maskAnyFuncMap[maskType] = maskFunc
 }
 
 // String masks the given argument string
 func (m *Masker) String(tag, value string) (string, error) {
 	if tag != "" {
-		for mt, maskStringFunc := range m.maskStringFuncMap {
+		for _, mt := range m.maskStringFuncKeys {
 			if strings.HasPrefix(tag, mt) {
-				return maskStringFunc(tag[len(mt):], value)
+				return m.maskStringFuncMap[mt](tag[len(mt):], value)
 			}
 		}
 		if ok, v, err := m.maskAny(tag, value); ok {
@@ -205,9 +226,9 @@ func (m *Masker) String(tag, value string) (string, error) {
 // Int masks the given argument int
 func (m *Masker) Int(tag string, value int) (int, error) {
 	if tag != "" {
-		for mt, maskIntFunc := range m.maskIntFuncMap {
+		for _, mt := range m.maskIntFuncKeys {
 			if strings.HasPrefix(tag, mt) {
-				return maskIntFunc(tag[len(mt):], value)
+				return m.maskIntFuncMap[mt](tag[len(mt):], value)
 			}
 		}
 		if ok, v, err := m.maskAny(tag, value); ok {
@@ -221,9 +242,9 @@ func (m *Masker) Int(tag string, value int) (int, error) {
 // Float64 masks the given argument float64
 func (m *Masker) Float64(tag string, value float64) (float64, error) {
 	if tag != "" {
-		for mt, maskFloat64Func := range m.maskFloat64FuncMap {
+		for _, mt := range m.maskFloat64FuncKeys {
 			if strings.HasPrefix(tag, mt) {
-				return maskFloat64Func(tag[len(mt):], value)
+				return m.maskFloat64FuncMap[mt](tag[len(mt):], value)
 			}
 		}
 		if ok, v, err := m.maskAny(tag, value); ok {
@@ -236,9 +257,9 @@ func (m *Masker) Float64(tag string, value float64) (float64, error) {
 
 func (m *Masker) maskAny(tag string, value any) (bool, any, error) {
 	if tag != "" {
-		for mt, maskAnyFunc := range m.maskAnyFuncMap {
+		for _, mt := range m.maskAnyFuncKeys {
 			if strings.HasPrefix(tag, mt) {
-				v, err := maskAnyFunc(tag[len(mt):], value)
+				v, err := m.maskAnyFuncMap[mt](tag[len(mt):], value)
 				return true, v, err
 			}
 		}
@@ -249,9 +270,9 @@ func (m *Masker) maskAny(tag string, value any) (bool, any, error) {
 
 func (m *Masker) maskAnyValue(tag string, value reflect.Value) (bool, reflect.Value, error) {
 	if tag != "" {
-		for mt, maskAnyFunc := range m.maskAnyFuncMap {
+		for _, mt := range m.maskAnyFuncKeys {
 			if strings.HasPrefix(tag, mt) {
-				v, err := maskAnyFunc(tag[len(mt):], value.Interface())
+				v, err := m.maskAnyFuncMap[mt](tag[len(mt):], value.Interface())
 				return true, reflect.ValueOf(v), err
 			}
 		}
@@ -353,19 +374,18 @@ func (m *Masker) mask(rv reflect.Value, tag string, mp reflect.Value) (reflect.V
 	default:
 		if mp.IsValid() {
 			mp.Set(rv)
+			return mp, nil
 		}
 		return rv, nil
 	}
 }
 
-func (m *Masker) maskInterface(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {
+func (m *Masker) maskInterface(rv reflect.Value, tag string, _ reflect.Value) (reflect.Value, error) {
 	if rv.IsNil() {
 		return reflect.Zero(rv.Type()), nil
 	}
 
-	if !mp.IsValid() {
-		mp = reflect.New(rv.Type()).Elem()
-	}
+	mp := reflect.New(rv.Type()).Elem()
 	rv2, err := m.mask(reflect.ValueOf(rv.Interface()), tag, reflect.Value{})
 	if err != nil {
 		return reflect.Value{}, err
@@ -375,18 +395,17 @@ func (m *Masker) maskInterface(rv reflect.Value, tag string, mp reflect.Value) (
 	return mp, nil
 }
 
-func (m *Masker) maskPtr(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {
+func (m *Masker) maskPtr(rv reflect.Value, tag string, _ reflect.Value) (reflect.Value, error) {
 	if rv.IsNil() {
 		return reflect.Zero(rv.Type()), nil
 	}
 
-	if !mp.IsValid() {
-		mp = reflect.New(rv.Type().Elem())
-	}
-	_, err := m.mask(rv.Elem(), tag, mp.Elem())
+	mp := reflect.New(rv.Type().Elem())
+	rv2, err := m.mask(rv.Elem(), tag, mp.Elem())
 	if err != nil {
 		return reflect.Value{}, err
 	}
+	mp.Elem().Set(rv2)
 
 	return mp, nil
 }
@@ -422,13 +441,11 @@ func (m *Masker) maskStruct(rv reflect.Value, tag string, mp reflect.Value) (ref
 			continue
 		}
 		vTag := ss.structFields[i].Tag.Get(tagName)
-		rvf, err := m.mask(rv.Field(i), vTag, reflect.Value{})
+		rvf, err := m.mask(rv.Field(i), vTag, ss.mv.Field(i))
 		if err != nil {
 			return reflect.Value{}, err
 		}
-		if rvf.IsValid() {
-			ss.mv.Field(i).Set(rvf)
-		}
+		ss.mv.Field(i).Set(rvf)
 	}
 
 	return ss.mv, nil
@@ -476,6 +493,7 @@ func (m *Masker) maskSlice(rv reflect.Value, tag string, mp reflect.Value) (refl
 
 	if mp.IsValid() {
 		mp.Set(rv2)
+		return mp, nil
 	}
 
 	return rv2, nil
@@ -506,6 +524,7 @@ func (m *Masker) maskMap(rv reflect.Value, tag string, mp reflect.Value) (reflec
 	}
 	if mp.IsValid() {
 		mp.Set(rv2)
+		return mp, nil
 	}
 
 	return rv2, nil
@@ -616,7 +635,11 @@ func (m *Masker) maskString(rv reflect.Value, tag string, mp reflect.Value) (ref
 		return mp, nil
 	}
 
-	return reflect.ValueOf(&sp).Elem(), nil
+	return valueOfString(sp), nil
+}
+
+func valueOfString(s string) reflect.Value {
+	return reflect.ValueOf(&s).Elem()
 }
 
 func (m *Masker) maskInt(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {

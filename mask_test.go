@@ -58,6 +58,7 @@ type BenchTarget2 struct {
 
 func BenchmarkMask(b *testing.B) {
 	b.ReportAllocs()
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		v := BenchTarget{
 			I: 1,

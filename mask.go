@@ -457,34 +457,29 @@ func (m *Masker) maskSlice(rv reflect.Value, tag string, mp reflect.Value) (refl
 	}
 
 	rv2 := reflect.MakeSlice(rv.Type(), rv.Len(), rv.Len())
-	switch rv.Type().Elem().Kind() {
-	case reflect.String:
-		for i := 0; i < rv.Len(); i++ {
-			rvf, err := m.String(tag, rv.Index(i).String())
+	for i := 0; i < rv.Len(); i++ {
+		value := rv.Index(i)
+		switch rv.Type().Elem().Kind() {
+		case reflect.String:
+			rvf, err := m.String(tag, value.String())
 			if err != nil {
 				return reflect.Value{}, err
 			}
 			rv2.Index(i).SetString(rvf)
-		}
-	case reflect.Int:
-		for i := 0; i < rv.Len(); i++ {
-			rvf, err := m.Int(tag, int(rv.Index(i).Int()))
+		case reflect.Int:
+			rvf, err := m.Int(tag, int(value.Int()))
 			if err != nil {
 				return reflect.Value{}, err
 			}
 			rv2.Index(i).SetInt(int64(rvf))
-		}
-	case reflect.Float64:
-		for i := 0; i < rv.Len(); i++ {
-			rvf, err := m.Float64(tag, rv.Index(i).Float())
+		case reflect.Float64:
+			rvf, err := m.Float64(tag, value.Float())
 			if err != nil {
 				return reflect.Value{}, err
 			}
 			rv2.Index(i).SetFloat(rvf)
-		}
-	default:
-		for i := 0; i < rv.Len(); i++ {
-			_, err := m.mask(rv.Index(i), tag, rv2.Index(i))
+		default:
+			_, err := m.mask(value, tag, rv2.Index(i))
 			if err != nil {
 				return reflect.Value{}, err
 			}

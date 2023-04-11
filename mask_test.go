@@ -644,6 +644,119 @@ func TestMask_CompositeType(t *testing.T) {
 	}
 }
 
+func TestMask_SameStruct(t *testing.T) {
+	// Caching the struct type in sync.Map.
+	// If there are different fields with the same struct name in the same package, it will result in an error.
+	t.Skip()
+	type sameStructNameTest struct {
+		Usagi string
+	}
+	createSameStruct := func(value int) any {
+		type sameStructNameTest struct {
+			Usagi int
+		}
+		return sameStructNameTest{value}
+	}
+
+	t.Run(defaultTestCase("same struct name"), func(t *testing.T) {
+		defer cleanup(t)
+		{
+			input := sameStructNameTest{"Rabbit"}
+			got, err := Mask(input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(input, got); diff != "" {
+				t.Error(diff)
+			}
+		}
+		{
+			input := createSameStruct(2)
+			got, err := Mask(input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(input, got); diff != "" {
+				t.Error(diff)
+			}
+		}
+	})
+	t.Run(newMaskerTestCase("same struct name"), func(t *testing.T) {
+		m := NewMasker()
+		{
+			input := sameStructNameTest{"Rabbit"}
+			got, err := m.Mask(input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(input, got); diff != "" {
+				t.Error(diff)
+			}
+		}
+
+		{
+			input := createSameStruct(2)
+			got, err := m.Mask(input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(input, got); diff != "" {
+				t.Error(diff)
+			}
+		}
+	})
+}
+
+func TestMask_SameAnonynousStruct(t *testing.T) {
+	t.Run(defaultTestCase("same anonymous struct name"), func(t *testing.T) {
+		defer cleanup(t)
+		{
+			input := struct {
+				Usagi string
+			}{
+				Usagi: "Rabbit",
+			}
+			got, err := Mask(input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(input, got); diff != "" {
+				t.Error(diff)
+			}
+		}
+		{
+			input := struct {
+				A int
+			}{
+				A: 2,
+			}
+			got, err := Mask(input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(input, got); diff != "" {
+				t.Error(diff)
+			}
+		}
+	})
+	t.Run(newMaskerTestCase("same anonymous struct name"), func(t *testing.T) {
+		m := NewMasker()
+		{
+			input := struct {
+				Usagi string
+			}{
+				Usagi: "Rabbit",
+			}
+			got, err := m.Mask(input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(input, got); diff != "" {
+				t.Error(diff)
+			}
+		}
+
+		{
+			input := struct {
+				A int
+			}{
+				A: 2,
+			}
+			got, err := m.Mask(input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(input, got); diff != "" {
+				t.Error(diff)
+			}
+		}
+	})
+}
+
 func TestString(t *testing.T) {
 	tests := map[string]struct {
 		tag   string

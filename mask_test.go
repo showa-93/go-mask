@@ -52,8 +52,9 @@ type BenchTarget struct {
 }
 
 type BenchTarget2 struct {
-	I int    `mask:"random100"`
-	S string `mask:"fixed"`
+	I  int      `mask:"random100"`
+	S  string   `mask:"fixed"`
+	SS []string `mask:"filled"`
 }
 
 func BenchmarkMask(b *testing.B) {
@@ -75,6 +76,11 @@ func BenchmarkMask(b *testing.B) {
 			B: &BenchTarget2{
 				I: 2,
 				S: "Hello World2",
+				SS: []string{
+					"One",
+					"Two",
+					"Three",
+				},
 			},
 		}
 		Mask(v)

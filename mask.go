@@ -459,8 +459,8 @@ func (m *Masker) maskSlice(rv reflect.Value, tag string, mp reflect.Value) (refl
 	rv2 := reflect.MakeSlice(rv.Type(), rv.Len(), rv.Len())
 	switch rv.Type().Elem().Kind() {
 	case reflect.String:
-		for i, str := range rv.Interface().([]string) {
-			rvf, err := m.String(tag, str)
+		for i := 0; i < rv.Len(); i++ {
+			rvf, err := m.String(tag, rv.Index(i).String())
 			if err != nil {
 				return reflect.Value{}, err
 			}

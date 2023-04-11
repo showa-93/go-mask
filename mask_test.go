@@ -83,9 +83,9 @@ func BenchmarkMask(b *testing.B) {
 				3,
 			},
 			FS: []float64{
-				1,
-				2,
-				3,
+				1.0,
+				2.0,
+				3.0,
 			},
 			B: &BenchTarget2{
 				I: 2,
@@ -316,6 +316,9 @@ func TestMask_CompositeType(t *testing.T) {
 	}
 	type anyPtrTest struct {
 		Usagi *any
+	}
+	type anySliceTest struct {
+		Usagis []any
 	}
 
 	tests := map[string]struct {
@@ -590,6 +593,26 @@ func TestMask_CompositeType(t *testing.T) {
 		"nil in any fields": {
 			input: anyTest{Usagi: nil},
 			want:  anyTest{Usagi: nil},
+		},
+		"string slice in any slice fields": {
+			input: anySliceTest{Usagis: []any{"hoge", "fuga"}},
+			want:  anySliceTest{Usagis: []any{"hoge", "fuga"}},
+		},
+		"string struct slice in any slice fields": {
+			input: anySliceTest{Usagis: []any{stringTest{"hoge"}, stringTest{"fuga"}}},
+			want:  anySliceTest{Usagis: []any{stringTest{"hoge"}, stringTest{"fuga"}}},
+		},
+		"int slice in any slice fields": {
+			input: anySliceTest{Usagis: []any{3, 3}},
+			want:  anySliceTest{Usagis: []any{3, 3}},
+		},
+		"int struct slice in any slice fields": {
+			input: anySliceTest{Usagis: []any{intTest{3}, intTest{3}}},
+			want:  anySliceTest{Usagis: []any{intTest{3}, intTest{3}}},
+		},
+		"nil in any slice fields": {
+			input: anySliceTest{Usagis: nil},
+			want:  anySliceTest{Usagis: nil},
 		},
 		"string struct in any pointer fields": {
 			input: anyPtrTest{Usagi: convertAnyPtr(stringTest{"hoge"})},

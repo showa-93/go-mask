@@ -479,10 +479,11 @@ func (m *Masker) maskSlice(rv reflect.Value, tag string, mp reflect.Value) (refl
 			}
 			rv2.Index(i).SetFloat(rvf)
 		default:
-			_, err := m.mask(value, tag, rv2.Index(i))
+			rvf, err := m.mask(value, tag, rv2.Index(i))
 			if err != nil {
 				return reflect.Value{}, err
 			}
+			rv2.Index(i).Set(rvf)
 		}
 	}
 

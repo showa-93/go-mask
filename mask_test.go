@@ -217,7 +217,7 @@ func TestMask_PrimitiveType(t *testing.T) {
 			}
 		})
 		t.Run(newMaskerTestCase(name), func(t *testing.T) {
-			m := NewMasker()
+			m := newMasker()
 			got, err := m.Mask(tt.input)
 			if assert.NoError(t, err) {
 				if diff := cmp.Diff(tt.want, got); diff != "" {
@@ -634,7 +634,7 @@ func TestMask_CompositeType(t *testing.T) {
 			}
 		})
 		t.Run(newMaskerTestCase(name), func(t *testing.T) {
-			m := NewMasker()
+			m := newMasker()
 			got, err := m.Mask(tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
@@ -678,7 +678,7 @@ func TestMask_SameStruct(t *testing.T) {
 		}
 	})
 	t.Run(newMaskerTestCase("same struct name"), func(t *testing.T) {
-		m := NewMasker()
+		m := newMasker()
 		{
 			input := sameStructNameTest{"Rabbit"}
 			got, err := m.Mask(input)
@@ -728,7 +728,7 @@ func TestMask_SameAnonynousStruct(t *testing.T) {
 		}
 	})
 	t.Run(newMaskerTestCase("same anonymous struct name"), func(t *testing.T) {
-		m := NewMasker()
+		m := newMasker()
 		{
 			input := struct {
 				Usagi string
@@ -795,7 +795,7 @@ func TestString(t *testing.T) {
 			}
 		})
 		t.Run(newMaskerTestCase(name), func(t *testing.T) {
-			m := NewMasker()
+			m := newMasker()
 			got, err := m.String(tt.tag, tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
@@ -860,7 +860,7 @@ func TestInt(t *testing.T) {
 		})
 		t.Run(newMaskerTestCase(name), func(t *testing.T) {
 			rand.Seed(rand.NewSource(1).Int63())
-			m := NewMasker()
+			m := newMasker()
 			got, err := m.Int(tt.tag, tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -939,7 +939,7 @@ func TestFloat64(t *testing.T) {
 		})
 		t.Run(newMaskerTestCase(name), func(t *testing.T) {
 			rand.Seed(rand.NewSource(1).Int63())
-			m := NewMasker()
+			m := newMasker()
 			got, err := m.Float64(tt.tag, tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -1050,7 +1050,7 @@ func TestMaskFilled(t *testing.T) {
 			}
 		})
 		t.Run(newMaskerTestCase(name), func(t *testing.T) {
-			m := NewMasker()
+			m := newMasker()
 			got, err := m.Mask(tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
@@ -1089,7 +1089,7 @@ func TestMaskFixed(t *testing.T) {
 			}
 		})
 		t.Run(newMaskerTestCase(name), func(t *testing.T) {
-			m := NewMasker()
+			m := newMasker()
 			got, err := m.Mask(tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
@@ -1203,7 +1203,7 @@ func TestMaskHashString(t *testing.T) {
 			}
 		})
 		t.Run(newMaskerTestCase(name), func(t *testing.T) {
-			m := NewMasker()
+			m := newMasker()
 			got, err := m.Mask(tt.input)
 			assert.Nil(t, err)
 
@@ -1394,7 +1394,7 @@ func TestMaskRandom(t *testing.T) {
 
 		t.Run(newMaskerTestCase(name), func(t *testing.T) {
 			rand.Seed(rand.NewSource(1).Int63())
-			m := NewMasker()
+			m := newMasker()
 			got, err := m.Mask(tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
@@ -1524,7 +1524,7 @@ func TestMaskZero(t *testing.T) {
 
 		t.Run(newMaskerTestCase(name), func(t *testing.T) {
 			rand.Seed(rand.NewSource(1).Int63())
-			m := NewMasker()
+			m := newMasker()
 			got, err := m.Mask(tt.input)
 			assert.Nil(t, err)
 			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
@@ -1608,7 +1608,7 @@ func defaultTestCase(name string) string {
 	return "default Masker:" + name
 }
 func newMaskerTestCase(name string) string {
-	return "NewMasker:" + name
+	return "newMasker:" + name
 }
 
 func cleanup(t *testing.T) {
@@ -1617,4 +1617,15 @@ func cleanup(t *testing.T) {
 		defaultMasker.typeToStructMap.Delete(key)
 		return false
 	})
+}
+
+func newMasker() *Masker {
+	m := NewMasker()
+	m.RegisterMaskStringFunc(MaskTypeFilled, m.MaskFilledString)
+	m.RegisterMaskStringFunc(MaskTypeFixed, m.MaskFixedString)
+	m.RegisterMaskStringFunc(MaskTypeHash, m.MaskHashString)
+	m.RegisterMaskIntFunc(MaskTypeRandom, m.MaskRandomInt)
+	m.RegisterMaskFloat64Func(MaskTypeRandom, m.MaskRandomFloat64)
+	m.RegisterMaskAnyFunc(MaskTypeZero, m.MaskZero)
+	return m
 }

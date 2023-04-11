@@ -65,6 +65,8 @@ func main() {
 		}
 		masker := mask.NewMasker()
 		masker.SetMaskChar("-")
+		masker.RegisterMaskStringFunc(mask.MaskTypeFilled, masker.MaskFilledString)
+		masker.RegisterMaskStringFunc(mask.MaskTypeFixed, masker.MaskFixedString)
 
 		maskValue, _ := mask.Mask(value)
 		maskValue2, _ := masker.Mask(value)
@@ -112,6 +114,8 @@ func main() {
 			Percent: 0.80,
 		}
 		masker := mask.NewMasker()
+		masker.RegisterMaskIntFunc(mask.MaskTypeRandom, masker.MaskRandomInt)
+		masker.RegisterMaskFloat64Func(mask.MaskTypeRandom, masker.MaskRandomFloat64)
 
 		maskValue, _ := mask.Mask(value)
 		maskValue2, _ := masker.Mask(value)
@@ -157,6 +161,8 @@ func main() {
 	}
 	masker := mask.NewMasker()
 	masker.SetMaskChar("+")
+	masker.RegisterMaskStringFunc(mask.MaskTypeFilled, masker.MaskFilledString)
+	masker.RegisterMaskIntFunc(mask.MaskTypeRandom, masker.MaskRandomInt)
 
 	maskValues, _ := mask.Mask(values)
 	maskValues2, _ := masker.Mask(values)
@@ -201,6 +207,8 @@ func main() {
 	}
 	masker := mask.NewMasker()
 	masker.SetMaskChar("")
+	masker.RegisterMaskStringFunc(mask.MaskTypeFilled, masker.MaskFilledString)
+	masker.RegisterMaskIntFunc(mask.MaskTypeRandom, masker.MaskRandomInt)
 
 	maskValues, _ := mask.Mask(values)
 	maskValues2, _ := masker.Mask(values)
@@ -212,8 +220,8 @@ func main() {
 ```
 ```
 map[one:{Name:Thomas Jeffrey "Tom" Hanks Type:1} two:{Name:Leonardo Wilhelm DiCaprio Type:2}]
-map[one:{Name:************************** Type:4} two:{Name:************************* Type:8}]
-map[one:{Name:++++++++++++++++++++++++++ Type:2} two:{Name:+++++++++++++++++++++++++ Type:3}]
+map[one:{Name:************************** Type:8} two:{Name:************************* Type:6}]
+map[one:{Name: Type:6} two:{Name: Type:2}]
 ```
 
 ### nested struct
@@ -245,6 +253,7 @@ func main() {
 
 	masker := mask.NewMasker()
 	masker.SetMaskChar("🤗")
+	masker.RegisterMaskStringFunc(mask.MaskTypeFilled, masker.MaskFilledString)
 
 	maskNode, _ := mask.Mask(node)
 	maskNode2, _ := masker.Mask(node)
@@ -318,7 +327,6 @@ func main() {
 	got2, _ := masker.Mask(input)
 	fmt.Printf("%+v\n", got2)
 }
-
 ```
 ```
 {Message:I love gopher!}

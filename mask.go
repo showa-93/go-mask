@@ -13,6 +13,16 @@ import (
 	"github.com/goccy/go-reflect"
 )
 
+func init() {
+	defaultMasker = NewMasker()
+	defaultMasker.RegisterMaskStringFunc(MaskTypeFilled, defaultMasker.MaskFilledString)
+	defaultMasker.RegisterMaskStringFunc(MaskTypeFixed, defaultMasker.MaskFixedString)
+	defaultMasker.RegisterMaskStringFunc(MaskTypeHash, defaultMasker.MaskHashString)
+	defaultMasker.RegisterMaskIntFunc(MaskTypeRandom, defaultMasker.MaskRandomInt)
+	defaultMasker.RegisterMaskFloat64Func(MaskTypeRandom, defaultMasker.MaskRandomFloat64)
+	defaultMasker.RegisterMaskAnyFunc(MaskTypeZero, defaultMasker.MaskZero)
+}
+
 // Tag name of the field in the structure when masking
 const tagName = "mask"
 
@@ -25,7 +35,7 @@ const (
 	MaskTypeZero   = "zero"
 )
 
-var defaultMasker *Masker = NewMasker()
+var defaultMasker *Masker
 
 type storeStruct struct {
 	mv           reflect.Value
@@ -139,12 +149,6 @@ func NewMasker() *Masker {
 		maskAnyFuncKeys:     make([]string, 0, 10),
 		maskAnyFuncMap:      make(map[string]MaskAnyFunc),
 	}
-	m.RegisterMaskStringFunc(MaskTypeFilled, m.maskFilledString)
-	m.RegisterMaskStringFunc(MaskTypeFixed, m.maskFixedString)
-	m.RegisterMaskStringFunc(MaskTypeHash, m.maskHashString)
-	m.RegisterMaskIntFunc(MaskTypeRandom, m.maskRandomInt)
-	m.RegisterMaskFloat64Func(MaskTypeRandom, m.maskRandomFloat64)
-	m.RegisterMaskAnyFunc(MaskTypeZero, m.maskZero)
 
 	return m
 }
@@ -281,7 +285,9 @@ func (m *Masker) maskAnyValue(tag string, value reflect.Value) (bool, reflect.Va
 	return false, value, nil
 }
 
-func (m *Masker) maskFilledString(arg, value string) (string, error) {
+// MaskFilledString masks the string length of the value with the same length.
+// If you pass a number like "2" to arg, it masks with the length of the number.(**)
+func (m *Masker) MaskFilledString(arg, value string) (string, error) {
 	if arg != "" {
 		count, err := strconv.Atoi(arg)
 		if err != nil {
@@ -294,16 +300,20 @@ func (m *Masker) maskFilledString(arg, value string) (string, error) {
 	return strings.Repeat(m.MaskChar(), utf8.RuneCountInString(value)), nil
 }
 
-func (m *Masker) maskFixedString(arg, value string) (string, error) {
+// MaskFixedString masks with a fixed length (8 characters).
+func (m *Masker) MaskFixedString(arg, value string) (string, error) {
 	return strings.Repeat(m.MaskChar(), 8), nil
 }
 
-func (m *Masker) maskHashString(arg, value string) (string, error) {
+// MaskHashString masks and hashes (sha1) a string.
+func (m *Masker) MaskHashString(arg, value string) (string, error) {
 	hash := sha1.Sum(([]byte)(value))
 	return hex.EncodeToString(hash[:]), nil
 }
 
-func (m *Masker) maskRandomInt(arg string, value int) (int, error) {
+// MaskRandomInt converts an integer (int) into a random number.
+// For example, if you pass "100" as the arg, it sets a random number in the range of 0-99.
+func (m *Masker) MaskRandomInt(arg string, value int) (int, error) {
 	n, err := strconv.Atoi(arg)
 	if err != nil {
 		return 0, err
@@ -312,7 +322,9 @@ func (m *Masker) maskRandomInt(arg string, value int) (int, error) {
 	return rand.Intn(n), nil
 }
 
-func (m *Masker) maskRandomFloat64(arg string, value float64) (float64, error) {
+// MaskRandomFloat64 converts a float64 to a random number.
+// For example, if you pass "100.3" to arg, it sets a random number in the range of 0.000 to 99.999.
+func (m *Masker) MaskRandomFloat64(arg string, value float64) (float64, error) {
 	var (
 		i, d int
 		err  error
@@ -335,7 +347,8 @@ func (m *Masker) maskRandomFloat64(arg string, value float64) (float64, error) {
 	return x / dd, nil
 }
 
-func (m *Masker) maskZero(arg string, value any) (any, error) {
+// MaskZero converts the value to its type's zero value.
+func (m *Masker) MaskZero(arg string, value any) (any, error) {
 	return reflect.Zero(reflect.TypeOf(value)).Interface(), nil
 }
 

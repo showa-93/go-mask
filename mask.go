@@ -467,16 +467,16 @@ func (m *Masker) maskSlice(rv reflect.Value, tag string, mp reflect.Value) (refl
 			rv2.Index(i).SetString(rvf)
 		}
 	case reflect.Int:
-		for i, v := range rv.Interface().([]int) {
-			rvf, err := m.Int(tag, v)
+		for i := 0; i < rv.Len(); i++ {
+			rvf, err := m.Int(tag, int(rv.Index(i).Int()))
 			if err != nil {
 				return reflect.Value{}, err
 			}
 			rv2.Index(i).SetInt(int64(rvf))
 		}
 	case reflect.Float64:
-		for i, v := range rv.Interface().([]float64) {
-			rvf, err := m.Float64(tag, v)
+		for i := 0; i < rv.Len(); i++ {
+			rvf, err := m.Float64(tag, rv.Index(i).Float())
 			if err != nil {
 				return reflect.Value{}, err
 			}

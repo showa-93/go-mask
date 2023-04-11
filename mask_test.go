@@ -48,13 +48,17 @@ type BenchTarget struct {
 	S  string            `mask:"filled"`
 	M  map[string]string `mask:"filled"`
 	SS []string          `mask:"filled"`
+	IS []int             `mask:"rondom100"`
+	FS []float64         `mask:"rondom100"`
 	B  *BenchTarget2
 }
 
 type BenchTarget2 struct {
-	I  int      `mask:"random100"`
-	S  string   `mask:"fixed"`
-	SS []string `mask:"filled"`
+	I  int       `mask:"random100"`
+	S  string    `mask:"fixed"`
+	SS []string  `mask:"filled"`
+	IS []int     `mask:"rondom100"`
+	FS []float64 `mask:"rondom100"`
 }
 
 func BenchmarkMask(b *testing.B) {
@@ -73,6 +77,16 @@ func BenchmarkMask(b *testing.B) {
 				"Two",
 				"Three",
 			},
+			IS: []int{
+				1,
+				2,
+				3,
+			},
+			FS: []float64{
+				1,
+				2,
+				3,
+			},
 			B: &BenchTarget2{
 				I: 2,
 				S: "Hello World2",
@@ -80,6 +94,16 @@ func BenchmarkMask(b *testing.B) {
 					"One",
 					"Two",
 					"Three",
+				},
+				IS: []int{
+					1,
+					2,
+					3,
+				},
+				FS: []float64{
+					1,
+					2,
+					3,
 				},
 			},
 		}

@@ -16,6 +16,7 @@ go-mask is a simple, customizable Go library for masking sensitive information.
 		- [int / float64](#int--float64)
 		- [slice](#slice)
 		- [map](#map)
+		- [JSON](#json)
 		- [nested struct](#nested-struct)
 		- [field name / map key](#field-name--map-key)
 		- [custom mask function](#custom-mask-function)
@@ -236,6 +237,42 @@ func main() {
 map[one:{Name:Thomas Jeffrey "Tom" Hanks Type:1} two:{Name:Leonardo Wilhelm DiCaprio Type:2}]
 map[one:{Name:************************** Type:8} two:{Name:************************* Type:6}]
 map[one:{Name: Type:6} two:{Name: Type:2}]
+```
+
+### JSON
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+
+	mask "github.com/showa-93/go-mask"
+)
+
+func main() {
+	masker := mask.NewMasker()
+	masker.RegisterMaskStringFunc(mask.MaskTypeFilled, masker.MaskFilledString)
+	masker.RegisterMaskField("S", "filled4")
+
+	v := `{
+		"S": "Hello world",
+		"I": 1,
+		"O": {
+			"S": "Second",
+			"S2": "豚汁"
+		}
+	}`
+	var target any
+	json.Unmarshal([]byte(v), &target)
+	masked, _ := masker.Mask(target)
+	mv, _ := json.Marshal(masked)
+	fmt.Println(string(mv))
+}
+```
+```
+{"I":1,"O":{"S":"****","S2":"豚汁"},"S":"****"}
 ```
 
 ### nested struct

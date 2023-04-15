@@ -28,6 +28,7 @@ go-mask is a simple, customizable Go library for masking sensitive information.
 - Users can make use of their own custom-created masking functions. (example → [custom mask function](#custom-mask-function))
 - The masked object is a copied object, so it does not overwrite the original data before masking(although it's not perfect...)
   - Private fields are not copied
+  - It is moderately fast in performing deep copies.
 
 ## Installation
 

@@ -1700,6 +1700,55 @@ func TestMaskFieldName(t *testing.T) {
 	}
 }
 
+func TestSetTagName(t *testing.T) {
+	t.Run("change a tag name", func(t *testing.T) {
+		m := newMasker()
+		m.SetTagName("fake")
+
+		input := struct {
+			SM string `mask:"filled4"`
+			SF string `fake:"filled4"`
+		}{
+			SM: "Hello World",
+			SF: "Hello World",
+		}
+		want := struct {
+			SM string `mask:"filled4"`
+			SF string `fake:"filled4"`
+		}{
+			SM: "Hello World",
+			SF: "****",
+		}
+		got, _ := m.Mask(input)
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Error(diff)
+		}
+	})
+	t.Run("change a empty tag name", func(t *testing.T) {
+		m := newMasker()
+		m.SetTagName("")
+
+		input := struct {
+			SM string `mask:"filled4"`
+			SF string `fake:"filled4"`
+		}{
+			SM: "Hello World",
+			SF: "Hello World",
+		}
+		want := struct {
+			SM string `mask:"filled4"`
+			SF string `fake:"filled4"`
+		}{
+			SM: "****",
+			SF: "Hello World",
+		}
+		got, _ := m.Mask(input)
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Error(diff)
+		}
+	})
+}
+
 func allowUnexported(v any) cmp.Options {
 	var options cmp.Options
 	if !reflect.ValueOf(v).IsValid() {

@@ -24,7 +24,9 @@ func init() {
 }
 
 // Tag name of the field in the structure when masking
-const tagName = "mask"
+const TagName = "mask"
+
+const maskChar = "*"
 
 // Default tag that can be specified as a mask
 const (
@@ -130,6 +132,7 @@ func Float64(tag string, value float64) (float64, error) {
 
 // Masker is a struct that defines the masking process.
 type Masker struct {
+	tagName         string
 	maskChar        string
 	typeToStructMap sync.Map
 
@@ -148,7 +151,8 @@ type Masker struct {
 // NewMasker initializes a Masker.
 func NewMasker() *Masker {
 	m := &Masker{
-		maskChar: "*",
+		tagName:  TagName,
+		maskChar: maskChar,
 
 		maskFieldMap: make(map[string]string),
 
@@ -163,6 +167,13 @@ func NewMasker() *Masker {
 	}
 
 	return m
+}
+
+// SetTagName allows you to change the tag name from "mask" to something else.
+func (m *Masker) SetTagName(s string) {
+	if s != "" {
+		m.tagName = s
+	}
 }
 
 // SetMaskChar changes the character used for masking
@@ -483,7 +494,7 @@ func (m *Masker) maskStruct(rv reflect.Value, tag string, mp reflect.Value) (ref
 		if field.PkgPath != "" {
 			continue
 		}
-		tag := ss.structFields[i].Tag.Get(tagName)
+		tag := ss.structFields[i].Tag.Get(m.tagName)
 		rvf, err := m.mask(rv.Field(i), m.getTag(tag, field.Name), ss.mv.Field(i))
 		if err != nil {
 			return reflect.Value{}, err

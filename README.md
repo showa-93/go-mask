@@ -7,10 +7,24 @@
 
 go-mask is a simple, customizable Go library for masking sensitive information.
 
+- [go-mask](#go-mask)
+	- [Features](#features)
+	- [Installation](#installation)
+	- [Mask Tags](#mask-tags)
+	- [How to use](#how-to-use)
+		- [string](#string)
+		- [int / float64](#int--float64)
+		- [slice](#slice)
+		- [map](#map)
+		- [nested struct](#nested-struct)
+		- [field name / map key](#field-name--map-key)
+		- [custom mask function](#custom-mask-function)
+
 ## Features
 
-- You can mask any field of a structure using the struct's tags
-- Users can make use of their own custom-created masking functions
+- You can mask any field of a structure using the struct's tags. (example → [How to use](#how-to-use))
+- It is also possible to mask using field names or map keys without using tags. (example → [field name / map key](#field-name--map-key))
+- Users can make use of their own custom-created masking functions. (example → [custom mask function](#custom-mask-function))
 - The masked object is a copied object, so it does not overwrite the original data before masking(although it's not perfect...)
   - Private fields are not copied
 
@@ -267,6 +281,53 @@ func main() {
 first={Value:first Next:0xc000010048},second=&{Value:second Next:0xc000010060},third=&{Value:third Next:<nil>}
 first={Value:***** Next:0xc0000100a8},second=&{Value:****** Next:0xc0000100c0},third=&{Value:***** Next:<nil>}
 first={Value:🤗🤗🤗🤗🤗 Next:0xc000010120},second=&{Value:🤗🤗🤗🤗🤗🤗 Next:0xc000010138},third=&{Value:🤗🤗🤗🤗🤗 Next:<nil>}
+```
+
+### field name / map key
+
+```go
+package main
+
+import (
+	"fmt"
+
+	mask "github.com/showa-93/go-mask"
+)
+
+type User struct {
+	ID      string // no tag
+	Name    string
+	Gender  string
+	Age     int
+	ExtData map[string]string
+}
+
+func main() {
+	masker := mask.NewMasker()
+
+	masker.RegisterMaskStringFunc(mask.MaskTypeFilled, masker.MaskFilledString)
+	masker.RegisterMaskIntFunc(mask.MaskTypeRandom, masker.MaskRandomInt)
+
+	// registered field name
+	masker.RegisterMaskField("Name", "filled4")
+	masker.RegisterMaskField("Animal", "filled6")
+	masker.RegisterMaskField("Age", mask.MaskTypeRandom+"100")
+
+	u := User{
+		ID:     "1",
+		Name:   "タマ",
+		Gender: "Male",
+		Age:    4,
+		ExtData: map[string]string{
+			"Animal": "Cat",
+		},
+	}
+	maskedUser, _ := masker.Mask(u)
+	fmt.Printf("%+v", maskedUser)
+}
+```
+```
+{ID:1 Name:**** Gender:Male Age:10 ExtData:map[Animal:******]}
 ```
 
 ### custom mask function

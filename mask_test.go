@@ -44,6 +44,39 @@ func Example() {
 	// {ID:123456 Name:***** Age:83 Address:{PostCode:}}
 }
 
+func ExampleRegisterMaskField() {
+	rand.Seed(12345)
+	type User2 struct {
+		ID      string
+		Name    string
+		Age     int
+		ExtData map[string]string
+	}
+	user := User2{
+		ID:   "123456",
+		Name: "Usagi",
+		Age:  3,
+		ExtData: map[string]string{
+			"ID":       "123456",
+			"Favorite": "Cat",
+		},
+	}
+
+	RegisterMaskField("ID", "zero")
+	RegisterMaskField("Age", "random100")
+	RegisterMaskField("Name", "filled4")
+	RegisterMaskField("Favorite", "filled6")
+	maskUser, err := Mask(user)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("%+v", maskUser)
+
+	// Output:
+	// {ID: Name:**** Age:83 ExtData:map[Favorite:****** ID:]}
+}
+
 type BenchTarget struct {
 	I  int    `mask:"zero"`
 	S  string `mask:"filled"`

@@ -75,6 +75,13 @@ func MaskChar() string {
 	return defaultMasker.MaskChar()
 }
 
+// RegisterMaskField allows you to register a mask tag to be applied to the value of a struct field or map key that matches the fieldName.
+// If a mask tag is set on the struct field, it will take precedence.
+// from default masker.
+func RegisterMaskField(fieldName, maskType string) {
+	defaultMasker.RegisterMaskField(fieldName, maskType)
+}
+
 // RegisterMaskStringFunc registers a masking function for string values.
 // The function will be applied when the string set in the first argument is assigned as a tag to a field in the structure.
 // from default masker.
@@ -126,6 +133,8 @@ type Masker struct {
 	maskChar        string
 	typeToStructMap sync.Map
 
+	maskFieldMap map[string]string
+
 	maskStringFuncKeys  []string
 	maskStringFuncMap   map[string]MaskStringFunc
 	maskIntFuncKeys     []string
@@ -139,7 +148,10 @@ type Masker struct {
 // NewMasker initializes a Masker.
 func NewMasker() *Masker {
 	m := &Masker{
-		maskChar:            "*",
+		maskChar: "*",
+
+		maskFieldMap: make(map[string]string),
+
 		maskStringFuncKeys:  make([]string, 0, 10),
 		maskStringFuncMap:   make(map[string]MaskStringFunc),
 		maskIntFuncKeys:     make([]string, 0, 10),
@@ -161,6 +173,13 @@ func (m *Masker) SetMaskChar(s string) {
 // MaskChar returns the current character used for masking.
 func (m *Masker) MaskChar() string {
 	return m.maskChar
+}
+
+func (m *Masker) getTag(tag, key string) string {
+	if tag != "" {
+		return tag
+	}
+	return m.maskFieldMap[key]
 }
 
 // RegisterMaskStringFunc registers a masking function for string values.
@@ -209,6 +228,16 @@ func (m *Masker) RegisterMaskAnyFunc(maskType string, maskFunc MaskAnyFunc) {
 		m.maskAnyFuncKeys = append(m.maskAnyFuncKeys, maskType)
 	}
 	m.maskAnyFuncMap[maskType] = maskFunc
+}
+
+// RegisterMaskField allows you to register a mask tag to be applied to the value of a struct field or map key that matches the fieldName.
+// If a mask tag is set on the struct field, it will take precedence.
+func (m *Masker) RegisterMaskField(fieldName, maskType string) {
+	if m.maskFieldMap == nil {
+		m.maskFieldMap = make(map[string]string)
+	}
+
+	m.maskFieldMap[fieldName] = maskType
 }
 
 // String masks the given argument string
@@ -450,11 +479,12 @@ func (m *Masker) maskStruct(rv reflect.Value, tag string, mp reflect.Value) (ref
 	}
 
 	for i := 0; i < rv.NumField(); i++ {
-		if ss.structFields[i].PkgPath != "" {
+		field := ss.structFields[i]
+		if field.PkgPath != "" {
 			continue
 		}
-		vTag := ss.structFields[i].Tag.Get(tagName)
-		rvf, err := m.mask(rv.Field(i), vTag, ss.mv.Field(i))
+		tag := ss.structFields[i].Tag.Get(tagName)
+		rvf, err := m.mask(rv.Field(i), m.getTag(tag, field.Name), ss.mv.Field(i))
 		if err != nil {
 			return reflect.Value{}, err
 		}
@@ -592,7 +622,7 @@ func (m *Masker) maskStringKeyMap(rv reflect.Value, tag string) (reflect.Value, 
 	case reflect.String:
 		mm := make(map[string]string, rv.Len())
 		for k, v := range rv.Interface().(map[string]string) {
-			rvf, err := m.String(tag, v)
+			rvf, err := m.String(m.getTag(tag, k), v)
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -603,7 +633,7 @@ func (m *Masker) maskStringKeyMap(rv reflect.Value, tag string) (reflect.Value, 
 	case reflect.Int:
 		mm := make(map[string]int, rv.Len())
 		for k, v := range rv.Interface().(map[string]int) {
-			rvf, err := m.Int(tag, v)
+			rvf, err := m.Int(m.getTag(tag, k), v)
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -613,7 +643,7 @@ func (m *Masker) maskStringKeyMap(rv reflect.Value, tag string) (reflect.Value, 
 	case reflect.Float64:
 		mm := make(map[string]float64, rv.Len())
 		for k, v := range rv.Interface().(map[string]float64) {
-			rvf, err := m.Float64(tag, v)
+			rvf, err := m.Float64(m.getTag(tag, k), v)
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -621,9 +651,20 @@ func (m *Masker) maskStringKeyMap(rv reflect.Value, tag string) (reflect.Value, 
 		}
 
 		return reflect.ValueOf(mm), nil
+	default:
+		rv2 := reflect.MakeMapWithSize(rv.Type(), rv.Len())
+		iter := rv.MapRange()
+		for iter.Next() {
+			key, value := iter.Key(), iter.Value()
+			rf, err := m.mask(reflect.ToValue(value), m.getTag(tag, key.String()), reflect.Value{})
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			rv2.SetMapIndex(reflect.ToValue(key), rf)
+		}
+		return rv2, nil
 	}
 
-	return reflect.Value{}, nil
 }
 
 func (m *Masker) maskString(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {

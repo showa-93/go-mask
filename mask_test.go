@@ -1,6 +1,7 @@
 package mask
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -44,12 +45,12 @@ func Example() {
 }
 
 type BenchTarget struct {
-	I  int               `mask:"zero"`
-	S  string            `mask:"filled"`
-	M  map[string]string `mask:"filled"`
-	SS []string          `mask:"filled"`
-	IS []int             `mask:"rondom100"`
-	FS []float64         `mask:"rondom100"`
+	I  int    `mask:"zero"`
+	S  string `mask:"filled"`
+	M  map[string]string
+	SS []string  `mask:"filled"`
+	IS []int     `mask:"rondom100"`
+	FS []float64 `mask:"rondom100"`
 	B  *BenchTarget2
 }
 
@@ -62,6 +63,8 @@ type BenchTarget2 struct {
 }
 
 func BenchmarkMask(b *testing.B) {
+	RegisterMaskField("Hoge", MaskTypeFixed)
+	RegisterMaskField("Bob", MaskTypeFilled+"4")
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -301,6 +304,9 @@ func TestMask_CompositeType(t *testing.T) {
 	type mapStructToFloat64Test struct {
 		Usagi map[stringTest]float64
 	}
+	type mapStructToStructTest struct {
+		Usagi map[stringTest]stringTest
+	}
 	type structTest struct {
 		StringTest      stringTest
 		StringSliceTest stringSliceTest
@@ -536,6 +542,10 @@ func TestMask_CompositeType(t *testing.T) {
 		"map struct to float64 fields": {
 			input: &mapStructToFloat64Test{Usagi: map[stringTest]float64{{Usagi: "ウサギ１"}: 201901221, {Usagi: "ウサギ２"}: 201901222, {Usagi: "ウサギ３"}: 201901223}},
 			want:  &mapStructToFloat64Test{Usagi: map[stringTest]float64{{Usagi: "ウサギ１"}: 201901221, {Usagi: "ウサギ２"}: 201901222, {Usagi: "ウサギ３"}: 201901223}},
+		},
+		"map struct to struct fields": {
+			input: &mapStructToStructTest{Usagi: map[stringTest]stringTest{{Usagi: "ウサギ１"}: {Usagi: "Rabbit1"}, {Usagi: "ウサギ２"}: {Usagi: "Rabbit2"}, {Usagi: "ウサギ３"}: {Usagi: "Rabbit3"}}},
+			want:  &mapStructToStructTest{Usagi: map[stringTest]stringTest{{Usagi: "ウサギ１"}: {Usagi: "Rabbit1"}, {Usagi: "ウサギ２"}: {Usagi: "Rabbit2"}, {Usagi: "ウサギ３"}: {Usagi: "Rabbit3"}}},
 		},
 		"struct fields": {
 			input: &structTest{
@@ -1534,6 +1544,162 @@ func TestMaskZero(t *testing.T) {
 	}
 }
 
+func TestMaskFieldName(t *testing.T) {
+	tests := map[string]struct {
+		before func(m *Masker)
+		input  any
+		want   any
+	}{
+		"matches field of string type": {
+			before: func(m *Masker) {
+				m.RegisterMaskField("S", MaskTypeFilled+"4")
+			},
+			input: struct {
+				S string
+			}{
+				S: "Hello World",
+			},
+			want: struct {
+				S string
+			}{
+				S: "****",
+			},
+		},
+		"matches field of int type": {
+			before: func(m *Masker) {
+				rand.Seed(rand.NewSource(1).Int63())
+				m.RegisterMaskField("I", MaskTypeRandom+"100")
+			},
+			input: struct {
+				I int
+			}{
+				I: 10,
+			},
+			want: struct {
+				I int
+			}{
+				I: 29,
+			},
+		},
+		"matches field of float64 type": {
+			before: func(m *Masker) {
+				rand.Seed(rand.NewSource(1).Int63())
+				m.RegisterMaskField("F", MaskTypeRandom+"100.3")
+			},
+			input: struct {
+				F float64
+			}{
+				F: 10,
+			},
+			want: struct {
+				F float64
+			}{
+				F: 96.011,
+			},
+		},
+		"matches field of any type": {
+			before: func(m *Masker) {
+				rand.Seed(rand.NewSource(1).Int63())
+				m.RegisterMaskField("S", MaskTypeZero)
+				m.RegisterMaskField("I", MaskTypeZero)
+				m.RegisterMaskField("F", MaskTypeZero)
+				m.RegisterMaskField("A", MaskTypeZero)
+			},
+			input: struct {
+				S string
+				I int
+				F float64
+				A any
+			}{
+				S: "String",
+				I: 10,
+				F: 10.2,
+				A: struct{ SS string }{"Child"},
+			},
+			want: struct {
+				S string
+				I int
+				F float64
+				A any
+			}{
+				S: "",
+				I: 0,
+				F: 0,
+				A: struct{ SS string }{},
+			},
+		},
+		"matches field of map type": {
+			before: func(m *Masker) {
+				rand.Seed(rand.NewSource(1).Int63())
+				m.RegisterMaskField("S", MaskTypeFilled+"4")
+				m.RegisterMaskField("I", MaskTypeRandom+"100")
+			},
+			input: map[string]any{
+				"M": map[string]any{
+					"S": "Hello world",
+					"I": 10,
+				},
+			},
+			want: map[string]any{
+				"M": map[string]any{
+					"S": "****",
+					"I": 29,
+				},
+			},
+		},
+		"matches field of json": {
+			before: func(m *Masker) {
+				rand.Seed(rand.NewSource(1).Int63())
+				m.RegisterMaskField("S", MaskTypeFilled+"4")
+				m.RegisterMaskField("F", MaskTypeRandom+"100")
+			},
+			input: unmarshalJson(t, `{"M":{"S": "Hello World","F":10}}`),
+			want: map[string]any{
+				"M": map[string]any{
+					"S": "****",
+					"F": 96.0,
+				},
+			},
+		},
+		"no type match with registered tags": {
+			before: func(m *Masker) {
+				m.RegisterMaskField("S", MaskTypeRandom+"100") // random tag is only int or float
+			},
+			input: struct {
+				S string
+			}{
+				S: "Hello World",
+			},
+			want: struct {
+				S string
+			}{
+				S: "Hello World",
+			},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(defaultTestCase(name), func(t *testing.T) {
+			defer cleanup(t)
+			tt.before(defaultMasker)
+			got, err := Mask(tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
+			}
+		})
+
+		t.Run(newMaskerTestCase(name), func(t *testing.T) {
+			m := newMasker()
+			tt.before(m)
+			got, err := m.Mask(tt.input)
+			assert.Nil(t, err)
+			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				t.Error(diff)
+			}
+		})
+	}
+}
+
 func allowUnexported(v any) cmp.Options {
 	var options cmp.Options
 	if !reflect.ValueOf(v).IsValid() {
@@ -1602,6 +1768,16 @@ func convertBoolPtr(v bool) *bool {
 }
 func convertAnyPtr(v any) *any {
 	return &v
+}
+
+func unmarshalJson(t *testing.T, s string) any {
+	t.Helper()
+	var ret any
+	if err := json.Unmarshal([]byte(s), &ret); err != nil {
+		t.Fatal(err)
+	}
+
+	return ret
 }
 
 func defaultTestCase(name string) string {

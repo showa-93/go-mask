@@ -1749,6 +1749,47 @@ func TestSetTagName(t *testing.T) {
 	})
 }
 
+func TestSetMaskChar(t *testing.T) {
+	t.Run("change a mask character", func(t *testing.T) {
+		defer cleanup(t)
+		SetMaskChar("-")
+
+		input := struct {
+			S string `mask:"filled4"`
+		}{
+			S: "Hello World",
+		}
+		want := struct {
+			S string `mask:"filled4"`
+		}{
+			S: "----",
+		}
+		got, _ := Mask(input)
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Error(diff)
+		}
+	})
+	t.Run("change a empty mask character", func(t *testing.T) {
+		defer cleanup(t)
+		SetMaskChar("")
+
+		input := struct {
+			S string `mask:"filled4"`
+		}{
+			S: "Hello World",
+		}
+		want := struct {
+			S string `mask:"filled4"`
+		}{
+			S: "",
+		}
+		got, _ := Mask(input)
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Error(diff)
+		}
+	})
+}
+
 func allowUnexported(v any) cmp.Options {
 	var options cmp.Options
 	if !reflect.ValueOf(v).IsValid() {
@@ -1842,6 +1883,7 @@ func cleanup(t *testing.T) {
 		defaultMasker.typeToStructMap.Delete(key)
 		return false
 	})
+	SetMaskChar(maskChar)
 }
 
 func newMasker() *Masker {

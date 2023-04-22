@@ -274,6 +274,9 @@ func TestMask_CompositeType(t *testing.T) {
 	type stringSliceTest struct {
 		Usagi []string
 	}
+	type stringArrayTest struct {
+		Usagi [2]string
+	}
 	type stringSlicePtrTest struct {
 		Usagi *[]string
 	}
@@ -286,6 +289,9 @@ func TestMask_CompositeType(t *testing.T) {
 	type intSliceTest struct {
 		Usagi []int
 	}
+	type intArrayTest struct {
+		Usagi [3]int
+	}
 	type intSlicePtrTest struct {
 		Usagi *[]int
 	}
@@ -297,6 +303,9 @@ func TestMask_CompositeType(t *testing.T) {
 	}
 	type float64SliceTest struct {
 		Usagi []float64
+	}
+	type float64ArrayTest struct {
+		Usagi [3]float64
 	}
 	type float64SlicePtrTest struct {
 		Usagi *[]float64
@@ -376,6 +385,10 @@ func TestMask_CompositeType(t *testing.T) {
 			input: []string{"ハァ？", "ウラ", "フゥン"},
 			want:  []string{"ハァ？", "ウラ", "フゥン"},
 		},
+		"string array": {
+			input: [2]string{"ハァ？", "ウラ"},
+			want:  [2]string{"ハァ？", "ウラ"},
+		},
 		"nil string slice": {
 			input: ([]string)(nil),
 			want:  ([]string)(nil),
@@ -408,6 +421,10 @@ func TestMask_CompositeType(t *testing.T) {
 			input: &stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
 			want:  &stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
 		},
+		"string array fields": {
+			input: &stringArrayTest{Usagi: [2]string{"ハァ？", "ウラ"}},
+			want:  &stringArrayTest{Usagi: [2]string{"ハァ？", "ウラ"}},
+		},
 		"nil string slice fields": {
 			input: &stringSliceTest{},
 			want:  &stringSliceTest{Usagi: ([]string)(nil)},
@@ -423,6 +440,10 @@ func TestMask_CompositeType(t *testing.T) {
 		"int slice": {
 			input: []int{20190122, 20200501, 20200501},
 			want:  []int{20190122, 20200501, 20200501},
+		},
+		"int array": {
+			input: [3]int{20190122, 20200501, 20200501},
+			want:  [3]int{20190122, 20200501, 20200501},
 		},
 		"nil int slice": {
 			input: ([]int)(nil),
@@ -456,6 +477,10 @@ func TestMask_CompositeType(t *testing.T) {
 			input: &intSliceTest{Usagi: []int{20190122, 20200501, 20200501}},
 			want:  &intSliceTest{Usagi: []int{20190122, 20200501, 20200501}},
 		},
+		"int arrat fields": {
+			input: &intArrayTest{Usagi: [3]int{20190122, 20200501, 20200501}},
+			want:  &intArrayTest{Usagi: [3]int{20190122, 20200501, 20200501}},
+		},
 		"nil int slice fields": {
 			input: &intSliceTest{},
 			want:  &intSliceTest{Usagi: ([]int)(nil)},
@@ -471,6 +496,10 @@ func TestMask_CompositeType(t *testing.T) {
 		"float64 slice": {
 			input: []float64{20190122, 20200501, 20200501},
 			want:  []float64{20190122, 20200501, 20200501},
+		},
+		"float64 array": {
+			input: [3]float64{20190122, 20200501, 20200501},
+			want:  [3]float64{20190122, 20200501, 20200501},
 		},
 		"nil float64 slice": {
 			input: ([]float64)(nil),
@@ -503,6 +532,10 @@ func TestMask_CompositeType(t *testing.T) {
 		"float64 slice fields": {
 			input: &float64SliceTest{Usagi: []float64{20190122, 20200501, 20200501}},
 			want:  &float64SliceTest{Usagi: []float64{20190122, 20200501, 20200501}},
+		},
+		"float64 array fields": {
+			input: &float64ArrayTest{Usagi: [3]float64{20190122, 20200501, 20200501}},
+			want:  &float64ArrayTest{Usagi: [3]float64{20190122, 20200501, 20200501}},
 		},
 		"nil float64 slice fields": {
 			input: &float64SliceTest{},
@@ -1152,6 +1185,9 @@ func TestMaskHashString(t *testing.T) {
 	type stringSliceTest struct {
 		Usagi []string `mask:"hash"`
 	}
+	type stringArrayTest struct {
+		Usagi [3]string `mask:"hash"`
+	}
 	type stringSlicePtrTest struct {
 		Usagi *[]string `mask:"hash"`
 	}
@@ -1188,6 +1224,14 @@ func TestMaskHashString(t *testing.T) {
 		"string slice fields": {
 			input: &stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
 			want: &stringSliceTest{Usagi: []string{
+				"48a8b33f36a35631f584844686adaba89a6f156a",
+				"ecef3e43f07f7150c089e99d5e1041259b1189d5",
+				"17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
+			}},
+		},
+		"string array fields": {
+			input: &stringArrayTest{Usagi: [3]string{"ハァ？", "ウラ", "フゥン"}},
+			want: &stringArrayTest{Usagi: [3]string{
 				"48a8b33f36a35631f584844686adaba89a6f156a",
 				"ecef3e43f07f7150c089e99d5e1041259b1189d5",
 				"17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
@@ -1282,6 +1326,15 @@ func TestMaskRandom(t *testing.T) {
 	type int64SliceTest struct {
 		Usagi []int64 `mask:"random1000"`
 	}
+	type intArrayTest struct {
+		Usagi [2]int `mask:"random1000"`
+	}
+	type int32ArrayTest struct {
+		Usagi [2]int32 `mask:"random1000"`
+	}
+	type int64ArrayTest struct {
+		Usagi [2]int64 `mask:"random1000"`
+	}
 	type intSlicePtrTest struct {
 		Usagi *[]int `mask:"random1000"`
 	}
@@ -1299,6 +1352,12 @@ func TestMaskRandom(t *testing.T) {
 	}
 	type float64SliceTest struct {
 		Usagi []float64 `mask:"random100000.4"`
+	}
+	type float32ArrayTest struct {
+		Usagi [3]float32 `mask:"random100000.4"`
+	}
+	type float64ArrayTest struct {
+		Usagi [3]float64 `mask:"random100000.4"`
 	}
 	type float64SlicePtrTest struct {
 		Usagi *[]float64 `mask:"random100000.4"`
@@ -1357,6 +1416,18 @@ func TestMaskRandom(t *testing.T) {
 			input: &int64SliceTest{Usagi: []int64{20190122, 20200501, 20200501}},
 			want:  &int64SliceTest{Usagi: []int64{829, 830, 400}},
 		},
+		"int array fields": {
+			input: &intArrayTest{Usagi: [2]int{20190122, 20200501}},
+			want:  &intArrayTest{Usagi: [2]int{829, 830}},
+		},
+		"int32 array fields": {
+			input: &int32ArrayTest{Usagi: [2]int32{20190122, 20200501}},
+			want:  &int32ArrayTest{Usagi: [2]int32{829, 830}},
+		},
+		"int64 array fields": {
+			input: &int64ArrayTest{Usagi: [2]int64{20190122, 20200501}},
+			want:  &int64ArrayTest{Usagi: [2]int64{829, 830}},
+		},
 		"nil int slice fields": {
 			input: &intSliceTest{},
 			want:  &intSliceTest{Usagi: ([]int)(nil)},
@@ -1396,6 +1467,14 @@ func TestMaskRandom(t *testing.T) {
 		"float64 slice fields": {
 			input: &float64SliceTest{Usagi: []float64{20190122, 20200501, 20200501}},
 			want:  &float64SliceTest{Usagi: []float64{96011.8989, 90863.3149, 32310.0201}},
+		},
+		"float32 array fields": {
+			input: &float32ArrayTest{Usagi: [3]float32{20190122, 20200501, 20200501}},
+			want:  &float32ArrayTest{Usagi: [3]float32{96011.8989, 90863.3149, 32310.0201}},
+		},
+		"float64 array fields": {
+			input: &float64ArrayTest{Usagi: [3]float64{20190122, 20200501, 20200501}},
+			want:  &float64ArrayTest{Usagi: [3]float64{96011.8989, 90863.3149, 32310.0201}},
 		},
 		"nil float64 slice fields": {
 			input: &float64SliceTest{},
@@ -1457,6 +1536,9 @@ func TestMaskZero(t *testing.T) {
 	type stringSliceTest struct {
 		Usagi []string `mask:"zero"`
 	}
+	type stringArrayTest struct {
+		Usagi [3]string `mask:"zero"`
+	}
 	type stringSlicePtrTest struct {
 		Usagi *[]string `mask:"zero"`
 	}
@@ -1499,6 +1581,10 @@ func TestMaskZero(t *testing.T) {
 		"string slice fields": {
 			input: &stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
 			want:  &stringSliceTest{},
+		},
+		"string array fields": {
+			input: &stringArrayTest{Usagi: [3]string{"ハァ？", "ウラ", "フゥン"}},
+			want:  &stringArrayTest{Usagi: [3]string{}},
 		},
 		"nil string slice fields": {
 			input: &stringSliceTest{},

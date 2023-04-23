@@ -47,6 +47,7 @@ type storeStruct struct {
 // Function type that must be satisfied to add a custom mask
 type (
 	MaskStringFunc  func(arg string, value string) (string, error)
+	MaskUintFunc    func(arg string, value uint) (uint, error)
 	MaskIntFunc     func(arg string, value int) (int, error)
 	MaskFloat64Func func(arg string, value float64) (float64, error)
 	MaskAnyFunc     func(arg string, value any) (any, error)
@@ -98,6 +99,13 @@ func RegisterMaskIntFunc(maskType string, maskFunc MaskIntFunc) {
 	defaultMasker.RegisterMaskIntFunc(maskType, maskFunc)
 }
 
+// RegisterMaskUintFunc registers a masking function for uint values.
+// The function will be applied when the string set in the first argument is assigned as a tag to a field in the structure.
+// from default masker.
+func RegisterMaskUintFunc(maskType string, maskFunc MaskUintFunc) {
+	defaultMasker.RegisterMaskUintFunc(maskType, maskFunc)
+}
+
 // RegisterMaskFloat64Func registers a masking function for float64 values.
 // The function will be applied when the string set in the first argument is assigned as a tag to a field in the structure.
 // from default masker.
@@ -124,6 +132,12 @@ func Int(tag string, value int) (int, error) {
 	return defaultMasker.Int(tag, value)
 }
 
+// Uint masks the given argument int
+// from default masker.
+func Uint(tag string, value uint) (uint, error) {
+	return defaultMasker.Uint(tag, value)
+}
+
 // Float64 masks the given argument float64
 // from default masker.
 func Float64(tag string, value float64) (float64, error) {
@@ -140,6 +154,8 @@ type Masker struct {
 
 	maskStringFuncKeys  []string
 	maskStringFuncMap   map[string]MaskStringFunc
+	maskUintFuncKeys    []string
+	maskUintFuncMap     map[string]MaskUintFunc
 	maskIntFuncKeys     []string
 	maskIntFuncMap      map[string]MaskIntFunc
 	maskFloat64FuncKeys []string
@@ -158,6 +174,8 @@ func NewMasker() *Masker {
 
 		maskStringFuncKeys:  make([]string, 0, 10),
 		maskStringFuncMap:   make(map[string]MaskStringFunc),
+		maskUintFuncKeys:    make([]string, 0, 10),
+		maskUintFuncMap:     make(map[string]MaskUintFunc),
 		maskIntFuncKeys:     make([]string, 0, 10),
 		maskIntFuncMap:      make(map[string]MaskIntFunc),
 		maskFloat64FuncKeys: make([]string, 0, 10),
@@ -203,6 +221,18 @@ func (m *Masker) RegisterMaskStringFunc(maskType string, maskFunc MaskStringFunc
 		m.maskStringFuncKeys = append(m.maskStringFuncKeys, maskType)
 	}
 	m.maskStringFuncMap[maskType] = maskFunc
+}
+
+// RegisterMaskUintFunc registers a masking function for uint values.
+// The function will be applied when the uint slice set in the first argument is assigned as a tag to a field in the structure.
+func (m *Masker) RegisterMaskUintFunc(maskType string, maskFunc MaskUintFunc) {
+	if m.maskUintFuncMap == nil {
+		m.maskUintFuncMap = make(map[string]MaskUintFunc)
+	}
+	if _, ok := m.maskUintFuncMap[maskType]; !ok {
+		m.maskUintFuncKeys = append(m.maskUintFuncKeys, maskType)
+	}
+	m.maskUintFuncMap[maskType] = maskFunc
 }
 
 // RegisterMaskIntFunc registers a masking function for int values.
@@ -261,6 +291,22 @@ func (m *Masker) String(tag, value string) (string, error) {
 		}
 		if ok, v, err := m.maskAny(tag, value); ok {
 			return v.(string), err
+		}
+	}
+
+	return value, nil
+}
+
+// Uint masks the given argument uint
+func (m *Masker) Uint(tag string, value uint) (uint, error) {
+	if tag != "" {
+		for _, mt := range m.maskUintFuncKeys {
+			if strings.HasPrefix(tag, mt) {
+				return m.maskUintFuncMap[mt](tag[len(mt):], value)
+			}
+		}
+		if ok, v, err := m.maskAny(tag, value); ok {
+			return v.(uint), err
 		}
 	}
 
@@ -422,6 +468,8 @@ func (m *Masker) mask(rv reflect.Value, tag string, mp reflect.Value) (reflect.V
 		return m.maskString(rv, tag, mp)
 	case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64:
 		return m.maskInt(rv, tag, mp)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return m.maskUint(rv, tag, mp)
 	case reflect.Float32, reflect.Float64:
 		return m.maskfloat(rv, tag, mp)
 	default:
@@ -538,6 +586,12 @@ func (m *Masker) maskSlice(rv reflect.Value, tag string, mp reflect.Value) (refl
 				return reflect.Value{}, err
 			}
 			rv2.Index(i).SetFloat(rvf)
+		case reflect.Uint:
+			rvf, err := m.Uint(tag, uint(value.Uint()))
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			rv2.Index(i).SetUint(uint64(rvf))
 		default:
 			rvf, err := m.mask(value, tag, rv2.Index(i))
 			if err != nil {
@@ -728,6 +782,31 @@ func (m *Masker) maskInt(rv reflect.Value, tag string, mp reflect.Value) (reflec
 	}
 
 	if rv.Type().Kind() != reflect.Int {
+		return reflect.ValueOf(&ip).Elem().Convert(rv.Type()), nil
+	}
+
+	return reflect.ValueOf(&ip).Elem(), nil
+}
+
+func (m *Masker) maskUint(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {
+	if tag == "" {
+		if mp.IsValid() {
+			mp.Set(rv)
+			return mp, nil
+		}
+		return rv, nil
+	}
+
+	ip, err := m.Uint(tag, uint(rv.Uint()))
+	if err != nil {
+		return reflect.Value{}, err
+	}
+	if mp.IsValid() {
+		mp.SetUint(uint64(ip))
+		return mp, nil
+	}
+
+	if rv.Type().Kind() != reflect.Uint {
 		return reflect.ValueOf(&ip).Elem().Convert(rv.Type()), nil
 	}
 

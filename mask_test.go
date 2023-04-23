@@ -200,6 +200,14 @@ func TestMask_PrimitiveType(t *testing.T) {
 			input: 0,
 			want:  0,
 		},
+		"byte": {
+			input: byte(12),
+			want:  byte(12),
+		},
+		"uint": {
+			input: uint(202),
+			want:  uint(202),
+		},
 		"string pointer": {
 			input: convertStringPtr("ヤハッ！"),
 			want:  convertStringPtr("ヤハッ！"),
@@ -295,6 +303,15 @@ func TestMask_CompositeType(t *testing.T) {
 	type intSlicePtrTest struct {
 		Usagi *[]int
 	}
+	type uintTest struct {
+		Usagi uint
+	}
+	type uintSliceTest struct {
+		Usagi []uint
+	}
+	type uintArrayTest struct {
+		Usagi [3]uint
+	}
 	type float64Test struct {
 		Usagi float64
 	}
@@ -315,6 +332,15 @@ func TestMask_CompositeType(t *testing.T) {
 	}
 	type boolPtrTest struct {
 		Usagi *bool
+	}
+	type byteTest struct {
+		Usagi byte
+	}
+	type byteSliceTest struct {
+		Usagi []byte
+	}
+	type byteArrayTest struct {
+		Usagi [4]byte
 	}
 	type mapStringToStringTest struct {
 		Usagi map[string]string
@@ -477,7 +503,7 @@ func TestMask_CompositeType(t *testing.T) {
 			input: &intSliceTest{Usagi: []int{20190122, 20200501, 20200501}},
 			want:  &intSliceTest{Usagi: []int{20190122, 20200501, 20200501}},
 		},
-		"int arrat fields": {
+		"int array fields": {
 			input: &intArrayTest{Usagi: [3]int{20190122, 20200501, 20200501}},
 			want:  &intArrayTest{Usagi: [3]int{20190122, 20200501, 20200501}},
 		},
@@ -492,6 +518,18 @@ func TestMask_CompositeType(t *testing.T) {
 		"nil int slice ptr fields": {
 			input: &intSlicePtrTest{},
 			want:  &intSlicePtrTest{Usagi: (*[]int)(nil)},
+		},
+		"uint fields": {
+			input: &uintTest{Usagi: 20190122},
+			want:  &uintTest{Usagi: 20190122},
+		},
+		"uint slice fields": {
+			input: &uintSliceTest{Usagi: []uint{20190122, 20200501, 20200501}},
+			want:  &uintSliceTest{Usagi: []uint{20190122, 20200501, 20200501}},
+		},
+		"uint array fields": {
+			input: &uintArrayTest{Usagi: [3]uint{20190122, 20200501, 20200501}},
+			want:  &uintArrayTest{Usagi: [3]uint{20190122, 20200501, 20200501}},
 		},
 		"float64 slice": {
 			input: []float64{20190122, 20200501, 20200501},
@@ -564,6 +602,26 @@ func TestMask_CompositeType(t *testing.T) {
 		"nil bool ptr fields": {
 			input: &boolPtrTest{},
 			want:  &boolPtrTest{Usagi: (*bool)(nil)},
+		},
+		"byte slice": {
+			input: []byte{10, 11, 12},
+			want:  []byte{10, 11, 12},
+		},
+		"byte array": {
+			input: [4]byte{10, 11, 12, 13},
+			want:  [4]byte{10, 11, 12, 13},
+		},
+		"byte fields": {
+			input: byteTest{Usagi: 11},
+			want:  byteTest{Usagi: 11},
+		},
+		"byte slice fields": {
+			input: byteSliceTest{Usagi: []byte{11, 12, 13}},
+			want:  byteSliceTest{Usagi: []byte{11, 12, 13}},
+		},
+		"byte array fields": {
+			input: byteArrayTest{Usagi: [4]byte{11, 12, 13, 14}},
+			want:  byteArrayTest{Usagi: [4]byte{11, 12, 13, 14}},
 		},
 		"map string to string fields": {
 			input: &mapStringToStringTest{Usagi: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
@@ -938,6 +996,83 @@ func TestInt(t *testing.T) {
 			rand.Seed(rand.NewSource(1).Int63())
 			m := newMasker()
 			got, err := m.Int(tt.tag, tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Error(diff)
+				}
+			}
+		})
+	}
+}
+
+func TestUint(t *testing.T) {
+	tests := map[string]struct {
+		tag     string
+		input   uint
+		want    uint
+		wantErr bool
+	}{
+		"no tag": {
+			tag:   "",
+			input: 20190122,
+			want:  20190122,
+		},
+		"undefined tag": {
+			tag:   "usagi!!",
+			input: 20190122,
+			want:  20190122,
+		},
+		"randomXX": {
+			tag:     "urandomXX",
+			input:   20190122,
+			wantErr: true,
+		},
+		"random30": {
+			tag:   "urandom30",
+			input: 20190122,
+			want:  9,
+		},
+		"random1000": {
+			tag:   "urandom1000",
+			input: 20190122,
+			want:  829,
+		},
+		"zero": {
+			tag:   "zero",
+			input: 0,
+			want:  0,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(defaultTestCase(name), func(t *testing.T) {
+			rand.Seed(rand.NewSource(1).Int63())
+			defer cleanup(t)
+			RegisterMaskUintFunc("urandom", func(arg string, value uint) (uint, error) {
+				ret, err := defaultMasker.MaskRandomInt(arg, int(value))
+				return uint(ret), err
+			})
+			got, err := Uint(tt.tag, tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Error(diff)
+				}
+			}
+		})
+		t.Run(newMaskerTestCase(name), func(t *testing.T) {
+			rand.Seed(rand.NewSource(1).Int63())
+			m := newMasker()
+			m.RegisterMaskUintFunc("urandom", func(arg string, value uint) (uint, error) {
+				ret, err := defaultMasker.MaskRandomInt(arg, int(value))
+				return uint(ret), err
+			})
+			got, err := m.Uint(tt.tag, tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -1545,6 +1680,9 @@ func TestMaskZero(t *testing.T) {
 	type intTest struct {
 		Usagi int `mask:"zero"`
 	}
+	type uintTest struct {
+		Usagi uint `mask:"zero"`
+	}
 	type float64Test struct {
 		Usagi float64 `mask:"zero"`
 	}
@@ -1605,6 +1743,14 @@ func TestMaskZero(t *testing.T) {
 		"zero int fields": {
 			input: &intTest{},
 			want:  &intTest{Usagi: 0},
+		},
+		"uint fields": {
+			input: &uintTest{Usagi: 20190122},
+			want:  &uintTest{Usagi: 0},
+		},
+		"zero uint fields": {
+			input: &uintTest{},
+			want:  &uintTest{Usagi: 0},
 		},
 		"float64 fields": {
 			input: &float64Test{Usagi: 20190122},

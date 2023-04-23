@@ -466,7 +466,7 @@ func (m *Masker) mask(rv reflect.Value, tag string, mp reflect.Value) (reflect.V
 		return m.maskMap(rv, tag, mp)
 	case reflect.String:
 		return m.maskString(rv, tag, mp)
-	case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return m.maskInt(rv, tag, mp)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return m.maskUint(rv, tag, mp)
@@ -642,14 +642,14 @@ func (m *Masker) maskMap(rv reflect.Value, tag string, mp reflect.Value) (reflec
 
 func (m *Masker) maskAnyKeyMap(rv reflect.Value, tag string) (reflect.Value, error) {
 	rv2 := reflect.MakeMapWithSize(rv.Type(), rv.Len())
-		iter := rv.MapRange()
-		for iter.Next() {
-			key, value := iter.Key(), iter.Value()
-			rf, err := m.mask(reflect.ToValue(value), tag, reflect.Value{})
-			if err != nil {
-				return reflect.Value{}, err
-			}
-			rv2.SetMapIndex(reflect.ToValue(key), rf)
+	iter := rv.MapRange()
+	for iter.Next() {
+		key, value := iter.Key(), iter.Value()
+		rf, err := m.mask(reflect.ToValue(value), tag, reflect.Value{})
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		rv2.SetMapIndex(reflect.ToValue(key), rf)
 	}
 
 	return rv2, nil

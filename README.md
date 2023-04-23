@@ -13,8 +13,8 @@ go-mask is a simple, customizable Go library for masking sensitive information.
 	- [Mask Tags](#mask-tags)
 	- [How to use](#how-to-use)
 		- [string](#string)
-		- [int / float64](#int--float64)
-		- [slice](#slice)
+		- [int / float64 / uint](#int--float64--uint)
+		- [slice / array](#slice--array)
 		- [map](#map)
 		- [JSON](#json)
 		- [nested struct](#nested-struct)
@@ -100,7 +100,7 @@ func main() {
 {Title:------------------- Casts:[-------- --------]}
 ```
 
-### int / float64
+### int / float64 / uint
 
 ```go
 package main
@@ -148,7 +148,7 @@ func main() {
 {Price:733 Percent:0.241}
 ```
 
-### slice
+### slice / array
 
 ```go
 package main

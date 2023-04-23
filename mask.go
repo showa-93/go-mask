@@ -628,7 +628,7 @@ func (m *Masker) maskMap(rv reflect.Value, tag string, mp reflect.Value) (reflec
 		}
 	}
 
-	rv2, err := m.maskAnyKeykMap(rv, tag)
+	rv2, err := m.maskAnyKeyMap(rv, tag)
 	if err != nil {
 		return reflect.Value{}, err
 	}
@@ -640,40 +640,8 @@ func (m *Masker) maskMap(rv reflect.Value, tag string, mp reflect.Value) (reflec
 	return rv2, nil
 }
 
-func (m *Masker) maskAnyKeykMap(rv reflect.Value, tag string) (reflect.Value, error) {
+func (m *Masker) maskAnyKeyMap(rv reflect.Value, tag string) (reflect.Value, error) {
 	rv2 := reflect.MakeMapWithSize(rv.Type(), rv.Len())
-	switch rv.Type().Elem().Kind() {
-	case reflect.String:
-		iter := rv.MapRange()
-		for iter.Next() {
-			key, value := iter.Key(), iter.Value()
-			rvf, err := m.String(tag, value.String())
-			if err != nil {
-				return reflect.Value{}, err
-			}
-			rv2.SetMapIndex(reflect.ToValue(key), reflect.ValueOf(rvf))
-		}
-	case reflect.Int:
-		iter := rv.MapRange()
-		for iter.Next() {
-			key, value := iter.Key(), iter.Value()
-			rvf, err := m.Int(tag, int(value.Int()))
-			if err != nil {
-				return reflect.Value{}, err
-			}
-			rv2.SetMapIndex(reflect.ToValue(key), reflect.ValueOf(rvf))
-		}
-	case reflect.Float64:
-		iter := rv.MapRange()
-		for iter.Next() {
-			key, value := iter.Key(), iter.Value()
-			rvf, err := m.Float64(tag, value.Float())
-			if err != nil {
-				return reflect.Value{}, err
-			}
-			rv2.SetMapIndex(reflect.ToValue(key), reflect.ValueOf(rvf))
-		}
-	default:
 		iter := rv.MapRange()
 		for iter.Next() {
 			key, value := iter.Key(), iter.Value()
@@ -682,7 +650,6 @@ func (m *Masker) maskAnyKeykMap(rv reflect.Value, tag string) (reflect.Value, er
 				return reflect.Value{}, err
 			}
 			rv2.SetMapIndex(reflect.ToValue(key), rf)
-		}
 	}
 
 	return rv2, nil

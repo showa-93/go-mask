@@ -759,22 +759,26 @@ func TestMask_CompositeType(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		t.Run(defaultTestCase(name), func(t *testing.T) {
-			defer cleanup(t)
-			got, err := Mask(tt.input)
-			assert.Nil(t, err)
-			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
-				t.Error(diff)
-			}
-		})
-		t.Run(newMaskerTestCase(name), func(t *testing.T) {
-			m := newMasker()
-			got, err := m.Mask(tt.input)
-			assert.Nil(t, err)
-			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
-				t.Error(diff)
-			}
-		})
+		for _, cache := range []bool{true, false} {
+			t.Run(defaultTestCase(name), func(t *testing.T) {
+				defer cleanup(t)
+				defaultMasker.Cache(cache)
+				got, err := Mask(tt.input)
+				assert.Nil(t, err)
+				if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+					t.Error(diff)
+				}
+			})
+			t.Run(newMaskerTestCase(name), func(t *testing.T) {
+				m := newMasker()
+				m.Cache(cache)
+				got, err := m.Mask(tt.input)
+				assert.Nil(t, err)
+				if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+					t.Error(diff)
+				}
+			})
+		}
 	}
 }
 

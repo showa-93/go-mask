@@ -225,9 +225,6 @@ func (m *Masker) getTag(tag, key string) string {
 // RegisterMaskStringFunc registers a masking function for string values.
 // The function will be applied when the string set in the first argument is assigned as a tag to a field in the structure.
 func (m *Masker) RegisterMaskStringFunc(maskType string, maskFunc MaskStringFunc) {
-	if m.maskStringFuncMap == nil {
-		m.maskStringFuncMap = make(map[string]MaskStringFunc)
-	}
 	if _, ok := m.maskStringFuncMap[maskType]; !ok {
 		m.maskStringFuncKeys = append(m.maskStringFuncKeys, maskType)
 	}
@@ -237,9 +234,6 @@ func (m *Masker) RegisterMaskStringFunc(maskType string, maskFunc MaskStringFunc
 // RegisterMaskUintFunc registers a masking function for uint values.
 // The function will be applied when the uint slice set in the first argument is assigned as a tag to a field in the structure.
 func (m *Masker) RegisterMaskUintFunc(maskType string, maskFunc MaskUintFunc) {
-	if m.maskUintFuncMap == nil {
-		m.maskUintFuncMap = make(map[string]MaskUintFunc)
-	}
 	if _, ok := m.maskUintFuncMap[maskType]; !ok {
 		m.maskUintFuncKeys = append(m.maskUintFuncKeys, maskType)
 	}
@@ -249,9 +243,6 @@ func (m *Masker) RegisterMaskUintFunc(maskType string, maskFunc MaskUintFunc) {
 // RegisterMaskIntFunc registers a masking function for int values.
 // The function will be applied when the string set in the first argument is assigned as a tag to a field in the structure.
 func (m *Masker) RegisterMaskIntFunc(maskType string, maskFunc MaskIntFunc) {
-	if m.maskIntFuncMap == nil {
-		m.maskIntFuncMap = make(map[string]MaskIntFunc)
-	}
 	if _, ok := m.maskIntFuncMap[maskType]; !ok {
 		m.maskIntFuncKeys = append(m.maskIntFuncKeys, maskType)
 	}
@@ -261,9 +252,6 @@ func (m *Masker) RegisterMaskIntFunc(maskType string, maskFunc MaskIntFunc) {
 // RegisterMaskFloat64Func registers a masking function for float64 values.
 // The function will be applied when the string set in the first argument is assigned as a tag to a field in the structure.
 func (m *Masker) RegisterMaskFloat64Func(maskType string, maskFunc MaskFloat64Func) {
-	if m.maskFloat64FuncMap == nil {
-		m.maskFloat64FuncMap = make(map[string]MaskFloat64Func)
-	}
 	if _, ok := m.maskFloat64FuncMap[maskType]; !ok {
 		m.maskFloat64FuncKeys = append(m.maskFloat64FuncKeys, maskType)
 	}
@@ -273,9 +261,6 @@ func (m *Masker) RegisterMaskFloat64Func(maskType string, maskFunc MaskFloat64Fu
 // RegisterMaskAnyFunc registers a masking function that can be applied to any type.
 // The function will be applied when the string set in the first argument is assigned as a tag to a field in the structure.
 func (m *Masker) RegisterMaskAnyFunc(maskType string, maskFunc MaskAnyFunc) {
-	if m.maskAnyFuncMap == nil {
-		m.maskAnyFuncMap = make(map[string]MaskAnyFunc)
-	}
 	if _, ok := m.maskAnyFuncMap[maskType]; !ok {
 		m.maskAnyFuncKeys = append(m.maskAnyFuncKeys, maskType)
 	}
@@ -285,10 +270,6 @@ func (m *Masker) RegisterMaskAnyFunc(maskType string, maskFunc MaskAnyFunc) {
 // RegisterMaskField allows you to register a mask tag to be applied to the value of a struct field or map key that matches the fieldName.
 // If a mask tag is set on the struct field, it will take precedence.
 func (m *Masker) RegisterMaskField(fieldName, maskType string) {
-	if m.maskFieldMap == nil {
-		m.maskFieldMap = make(map[string]string)
-	}
-
 	m.maskFieldMap[fieldName] = maskType
 }
 

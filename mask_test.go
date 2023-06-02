@@ -2144,10 +2144,7 @@ func newMaskerTestCase(name string) string {
 
 func cleanup(t *testing.T) {
 	t.Helper()
-	defaultMasker.typeToStructMap.Range(func(key, _ any) bool {
-		defaultMasker.typeToStructMap.Delete(key)
-		return false
-	})
+	defaultMasker.typeToStructCache = make(map[string]structType)
 	SetMaskChar(maskChar)
 }
 

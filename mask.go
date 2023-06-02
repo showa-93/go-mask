@@ -39,11 +39,6 @@ const (
 
 var defaultMasker *Masker
 
-type storeStruct struct {
-	mv           reflect.Value
-	structFields []reflect.StructField
-}
-
 // Function type that must be satisfied to add a custom mask
 type (
 	MaskStringFunc  func(arg string, value string) (string, error)
@@ -144,11 +139,19 @@ func Float64(tag string, value float64) (float64, error) {
 	return defaultMasker.Float64(tag, value)
 }
 
+// structType stores the type information of a structure when caching is enabled
+type structType struct {
+	value        reflect.Value
+	structFields []reflect.StructField
+}
+
 // Masker is a struct that defines the masking process.
 type Masker struct {
-	tagName         string
-	maskChar        string
-	typeToStructMap sync.Map
+	cache             bool
+	mu                sync.RWMutex
+	tagName           string
+	maskChar          string
+	typeToStructCache map[string]structType
 
 	maskFieldMap map[string]string
 
@@ -169,6 +172,9 @@ func NewMasker() *Masker {
 	m := &Masker{
 		tagName:  TagName,
 		maskChar: maskChar,
+
+		cache:             true,
+		typeToStructCache: make(map[string]structType),
 
 		maskFieldMap: make(map[string]string),
 
@@ -197,6 +203,11 @@ func (m *Masker) SetTagName(s string) {
 // SetMaskChar changes the character used for masking
 func (m *Masker) SetMaskChar(s string) {
 	m.maskChar = s
+}
+
+// Cache can be toggled to cache the type information of the struct.
+func (m *Masker) Cache(enable bool) {
+	m.cache = enable
 }
 
 // MaskChar returns the current character used for masking.
@@ -516,41 +527,60 @@ func (m *Masker) maskStruct(rv reflect.Value, tag string, mp reflect.Value) (ref
 		return reflect.Zero(rv.Type()), nil
 	}
 
-	var ss storeStruct
 	rt := rv.Type()
-	if storeValue, ok := m.typeToStructMap.Load(rt.String()); ok {
-		ss = storeValue.(storeStruct)
-		if mp.IsValid() {
-			ss.mv = mp
+	var st structType
+	if m.cache {
+		m.mu.RLock()
+		key := rt.String()
+		var ok bool
+		st, ok = m.typeToStructCache[key]
+		m.mu.RUnlock()
+		if !ok {
+			m.mu.Lock()
+			st.value = reflect.New(rt).Elem()
+			for i := 0; i < rt.NumField(); i++ {
+				st.structFields = append(st.structFields, rt.Field(i))
+			}
+			m.typeToStructCache[key] = st
+			m.mu.Unlock()
+		}
+		if !mp.IsValid() {
+			mp = st.value
 		}
 	} else {
-		if mp.IsValid() {
-			ss.mv = mp
-		} else {
-			ss.mv = reflect.New(rt).Elem()
+		if !mp.IsValid() {
+			mp = reflect.New(rt).Elem()
 		}
-		ss.structFields = make([]reflect.StructField, rv.NumField())
-		for i := 0; i < rv.NumField(); i++ {
-			ss.structFields[i] = rt.Field(i)
-		}
-
-		m.typeToStructMap.Store(rt.String(), ss)
 	}
 
-	for i := 0; i < rv.NumField(); i++ {
-		field := ss.structFields[i]
+	for i := 0; i < rt.NumField(); i++ {
+		var field reflect.StructField
+		if m.cache {
+			field = st.structFields[i]
+		} else {
+			field = rt.Field(i)
+		}
 		if field.PkgPath != "" {
 			continue
 		}
-		tag := ss.structFields[i].Tag.Get(m.tagName)
-		rvf, err := m.mask(rv.Field(i), m.getTag(tag, field.Name), ss.mv.Field(i))
-		if err != nil {
-			return reflect.Value{}, err
+		tag := field.Tag.Get(m.tagName)
+		switch field.Type.Kind() {
+		case reflect.String:
+			s, err := m.String(m.getTag(tag, field.Name), rv.Field(i).String())
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			mp.Field(i).SetString(s)
+		default:
+			rvf, err := m.mask(rv.Field(i), m.getTag(tag, field.Name), mp.Field(i))
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			mp.Field(i).Set(rvf)
 		}
-		ss.mv.Field(i).Set(rvf)
 	}
 
-	return ss.mv, nil
+	return mp, nil
 }
 
 func (m *Masker) maskSlice(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {

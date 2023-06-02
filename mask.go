@@ -10,7 +10,7 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"github.com/goccy/go-reflect"
+	"reflect"
 )
 
 func init() {
@@ -645,11 +645,11 @@ func (m *Masker) maskAnyKeyMap(rv reflect.Value, tag string) (reflect.Value, err
 	iter := rv.MapRange()
 	for iter.Next() {
 		key, value := iter.Key(), iter.Value()
-		rf, err := m.mask(reflect.ToValue(value), tag, reflect.Value{})
+		rf, err := m.mask(value, tag, reflect.Value{})
 		if err != nil {
 			return reflect.Value{}, err
 		}
-		rv2.SetMapIndex(reflect.ToValue(key), rf)
+		rv2.SetMapIndex(key, rf)
 	}
 
 	return rv2, nil
@@ -694,11 +694,11 @@ func (m *Masker) maskStringKeyMap(rv reflect.Value, tag string) (reflect.Value, 
 		iter := rv.MapRange()
 		for iter.Next() {
 			key, value := iter.Key(), iter.Value()
-			rf, err := m.mask(reflect.ToValue(value), m.getTag(tag, key.String()), reflect.Value{})
+			rf, err := m.mask(value, m.getTag(tag, key.String()), reflect.Value{})
 			if err != nil {
 				return reflect.Value{}, err
 			}
-			rv2.SetMapIndex(reflect.ToValue(key), rf)
+			rv2.SetMapIndex(key, rf)
 		}
 		return rv2, nil
 	}

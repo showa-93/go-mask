@@ -3,7 +3,6 @@ module github.com/showa-93/go-mask
 go 1.19
 
 require (
-	github.com/goccy/go-reflect v1.2.0
 	github.com/google/go-cmp v0.5.9
 	github.com/stretchr/testify v1.8.2
 )

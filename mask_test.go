@@ -1,8 +1,8 @@
 package mask
 
 import (
-	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
 	"testing"
 
@@ -77,25 +77,25 @@ func ExampleRegisterMaskField() {
 	// {ID: Name:**** Age:83 ExtData:map[Favorite:****** ID:]}
 }
 
-type BenchTarget struct {
-	I  int    `mask:"zero"`
-	S  string `mask:"filled"`
-	M  map[string]string
-	SS []string  `mask:"filled"`
-	IS []int     `mask:"rondom100"`
-	FS []float64 `mask:"rondom100"`
-	B  *BenchTarget2
-}
-
-type BenchTarget2 struct {
-	I  int       `mask:"random100"`
-	S  string    `mask:"fixed"`
-	SS []string  `mask:"filled"`
-	IS []int     `mask:"rondom100"`
-	FS []float64 `mask:"rondom100"`
-}
-
 func BenchmarkMask(b *testing.B) {
+	type BenchTarget2 struct {
+		I  int       `mask:"random100"`
+		S  string    `mask:"fixed"`
+		SS []string  `mask:"filled"`
+		IS []int     `mask:"rondom100"`
+		FS []float64 `mask:"rondom100"`
+	}
+
+	type BenchTarget struct {
+		I  int    `mask:"zero"`
+		S  string `mask:"filled"`
+		M  map[string]string
+		SS []string  `mask:"filled"`
+		IS []int     `mask:"rondom100"`
+		FS []float64 `mask:"rondom100"`
+		B  *BenchTarget2
+	}
+
 	RegisterMaskField("Hoge", MaskTypeFixed)
 	RegisterMaskField("Bob", MaskTypeFilled+"4")
 	b.ReportAllocs()
@@ -147,634 +147,1030 @@ func BenchmarkMask(b *testing.B) {
 	}
 }
 
-func TestMask_PrimitiveType(t *testing.T) {
+func TestMask(t *testing.T) {
 	tests := map[string]struct {
-		input any
-		want  any
+		prepare func(*Masker)
+		input   any
+		want    any
+		isErr   bool
 	}{
 		"string": {
-			input: "ヤハッ！",
-			want:  "ヤハッ！",
-		},
-		"empty string": {
-			input: "",
-			want:  "",
-		},
-		"true": {
-			input: true,
-			want:  true,
-		},
-		"false": {
-			input: false,
-			want:  false,
-		},
-		"int16": {
-			input: int16(2019),
-			want:  int16(2019),
-		},
-		"int32": {
-			input: int32(20190122),
-			want:  int32(20190122),
-		},
-		"int64": {
-			input: int64(20190122),
-			want:  int64(20190122),
+			prepare: func(*Masker) {},
+			input:   "サンクチュアリ",
+			want:    "サンクチュアリ",
 		},
 		"int": {
-			input: 20190122,
-			want:  20190122,
-		},
-		"zero int": {
-			input: 0,
-			want:  0,
-		},
-		"float32": {
-			input: 20190122,
-			want:  20190122,
-		},
-		"float64": {
-			input: 20190122,
-			want:  20190122,
-		},
-		"zero float64": {
-			input: 0,
-			want:  0,
-		},
-		"byte": {
-			input: byte(12),
-			want:  byte(12),
+			prepare: func(*Masker) {},
+			input:   int(100),
+			want:    int(100),
 		},
 		"uint": {
-			input: uint(202),
-			want:  uint(202),
-		},
-		"string pointer": {
-			input: convertStringPtr("ヤハッ！"),
-			want:  convertStringPtr("ヤハッ！"),
-		},
-		"int16 pointer": {
-			input: convertInt16Ptr(2019),
-			want:  convertInt16Ptr(2019),
-		},
-		"int32 pointer": {
-			input: convertInt32Ptr(20190122),
-			want:  convertInt32Ptr(20190122),
-		},
-		"int64 pointer": {
-			input: convertInt64Ptr(20190122),
-			want:  convertInt64Ptr(20190122),
-		},
-		"int pointer": {
-			input: convertIntPtr(20190122),
-			want:  convertIntPtr(20190122),
-		},
-		"float32 pointer": {
-			input: convertFloat32Ptr(20190122),
-			want:  convertFloat32Ptr(20190122),
-		},
-		"float64 pointer": {
-			input: convertFloat64Ptr(20190122),
-			want:  convertFloat64Ptr(20190122),
-		},
-		"nil string pointer": {
-			input: (*string)(nil),
-			want:  (*string)(nil),
-		},
-		"nil int pointer": {
-			input: (*int)(nil),
-			want:  (*int)(nil),
-		},
-		"nil float64 pointer": {
-			input: (*float64)(nil),
-			want:  (*float64)(nil),
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(defaultTestCase(name), func(t *testing.T) {
-			defer cleanup(t)
-			got, err := Mask(tt.input)
-			if assert.NoError(t, err) {
-				if diff := cmp.Diff(tt.want, got); diff != "" {
-					t.Error(diff)
-				}
-			}
-		})
-		t.Run(newMaskerTestCase(name), func(t *testing.T) {
-			m := newMasker()
-			got, err := m.Mask(tt.input)
-			if assert.NoError(t, err) {
-				if diff := cmp.Diff(tt.want, got); diff != "" {
-					t.Error(diff)
-				}
-			}
-		})
-	}
-}
-
-func TestMask_CompositeType(t *testing.T) {
-	type stringTest struct {
-		Usagi string
-	}
-	type stringPtrTest struct {
-		Usagi *string
-	}
-	type stringSliceTest struct {
-		Usagi []string
-	}
-	type stringArrayTest struct {
-		Usagi [2]string
-	}
-	type stringSlicePtrTest struct {
-		Usagi *[]string
-	}
-	type intTest struct {
-		Usagi int
-	}
-	type intPtrTest struct {
-		Usagi *int
-	}
-	type intSliceTest struct {
-		Usagi []int
-	}
-	type intArrayTest struct {
-		Usagi [3]int
-	}
-	type intSlicePtrTest struct {
-		Usagi *[]int
-	}
-	type uintTest struct {
-		Usagi uint
-	}
-	type uintSliceTest struct {
-		Usagi []uint
-	}
-	type uintArrayTest struct {
-		Usagi [3]uint
-	}
-	type float64Test struct {
-		Usagi float64
-	}
-	type float64PtrTest struct {
-		Usagi *float64
-	}
-	type float64SliceTest struct {
-		Usagi []float64
-	}
-	type float64ArrayTest struct {
-		Usagi [3]float64
-	}
-	type float64SlicePtrTest struct {
-		Usagi *[]float64
-	}
-	type boolTest struct {
-		Usagi bool
-	}
-	type boolPtrTest struct {
-		Usagi *bool
-	}
-	type byteTest struct {
-		Usagi byte
-	}
-	type byteSliceTest struct {
-		Usagi []byte
-	}
-	type byteArrayTest struct {
-		Usagi [4]byte
-	}
-	type mapStringToStringTest struct {
-		Usagi map[string]string
-	}
-	type mapStringToStringSliceTest struct {
-		Usagi []map[string]string
-	}
-	type mapStringToIntTest struct {
-		Usagi map[string]int
-	}
-	type mapStringToFloat64Test struct {
-		Usagi map[string]float64
-	}
-	type mapIntToStringTest struct {
-		Usagi map[int]string
-	}
-	type mapIntToIntTest struct {
-		Usagi map[int]int
-	}
-	type mapIntToFloat64Test struct {
-		Usagi map[int]float64
-	}
-	type mapStructToStringTest struct {
-		Usagi map[stringTest]string
-	}
-	type mapStructToIntTest struct {
-		Usagi map[stringTest]int
-	}
-	type mapStructToFloat64Test struct {
-		Usagi map[stringTest]float64
-	}
-	type mapStructToStructTest struct {
-		Usagi map[stringTest]stringTest
-	}
-	type structTest struct {
-		StringTest      stringTest
-		StringSliceTest stringSliceTest
-	}
-	type structSliceTest struct {
-		SliceTest []stringTest
-	}
-	type unexportedTest struct {
-		usagi string
-	}
-	type anyTest struct {
-		Usagi any
-	}
-	type anyPtrTest struct {
-		Usagi *any
-	}
-	type anySliceTest struct {
-		Usagis []any
-	}
-
-	tests := map[string]struct {
-		input any
-		want  any
-	}{
-		"string fields": {
-			input: &stringTest{Usagi: "ヤハッ！"},
-			want:  &stringTest{Usagi: "ヤハッ！"},
-		},
-		"string empty fields": {
-			input: &stringTest{},
-			want:  &stringTest{Usagi: ""},
-		},
-		"string slice": {
-			input: []string{"ハァ？", "ウラ", "フゥン"},
-			want:  []string{"ハァ？", "ウラ", "フゥン"},
-		},
-		"string array": {
-			input: [2]string{"ハァ？", "ウラ"},
-			want:  [2]string{"ハァ？", "ウラ"},
-		},
-		"nil string slice": {
-			input: ([]string)(nil),
-			want:  ([]string)(nil),
-		},
-		"string slice ptr": {
-			input: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
-			want:  convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"}),
-		},
-		"nil string slice ptr": {
-			input: (*[]string)(nil),
-			want:  (*[]string)(nil),
-		},
-		"map string to string": {
-			input: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"},
-			want:  map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"},
-		},
-		"nil map string to string": {
-			input: (map[string]string)(nil),
-			want:  (map[string]string)(nil),
-		},
-		"string ptr fields": {
-			input: &stringPtrTest{Usagi: convertStringPtr("ヤハッ！")},
-			want:  &stringPtrTest{Usagi: convertStringPtr("ヤハッ！")},
-		},
-		"nil string ptr fields": {
-			input: &stringPtrTest{},
-			want:  &stringPtrTest{Usagi: nil},
-		},
-		"string slice fields": {
-			input: &stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
-			want:  &stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
-		},
-		"string array fields": {
-			input: &stringArrayTest{Usagi: [2]string{"ハァ？", "ウラ"}},
-			want:  &stringArrayTest{Usagi: [2]string{"ハァ？", "ウラ"}},
-		},
-		"nil string slice fields": {
-			input: &stringSliceTest{},
-			want:  &stringSliceTest{Usagi: ([]string)(nil)},
-		},
-		"string slice ptr fields": {
-			input: &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"})},
-			want:  &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"})},
-		},
-		"nil string slice ptr fields": {
-			input: &stringSlicePtrTest{},
-			want:  &stringSlicePtrTest{Usagi: (*[]string)(nil)},
-		},
-		"int slice": {
-			input: []int{20190122, 20200501, 20200501},
-			want:  []int{20190122, 20200501, 20200501},
-		},
-		"int array": {
-			input: [3]int{20190122, 20200501, 20200501},
-			want:  [3]int{20190122, 20200501, 20200501},
-		},
-		"nil int slice": {
-			input: ([]int)(nil),
-			want:  ([]int)(nil),
-		},
-		"int slice ptr": {
-			input: convertIntSlicePtr([]int{20190122, 20200501, 20200501}),
-			want:  convertIntSlicePtr([]int{20190122, 20200501, 20200501}),
-		},
-		"nil int slice ptr": {
-			input: (*[]int)(nil),
-			want:  (*[]int)(nil),
-		},
-		"int fields": {
-			input: &intTest{Usagi: 20190122},
-			want:  &intTest{Usagi: 20190122},
-		},
-		"zero int fields": {
-			input: &intTest{},
-			want:  &intTest{Usagi: 0},
-		},
-		"int ptr fields": {
-			input: &intPtrTest{Usagi: convertIntPtr(20190122)},
-			want:  &intPtrTest{Usagi: convertIntPtr(20190122)},
-		},
-		"nil int ptr fields": {
-			input: &intPtrTest{},
-			want:  &intPtrTest{Usagi: nil},
-		},
-		"int slice fields": {
-			input: &intSliceTest{Usagi: []int{20190122, 20200501, 20200501}},
-			want:  &intSliceTest{Usagi: []int{20190122, 20200501, 20200501}},
-		},
-		"int array fields": {
-			input: &intArrayTest{Usagi: [3]int{20190122, 20200501, 20200501}},
-			want:  &intArrayTest{Usagi: [3]int{20190122, 20200501, 20200501}},
-		},
-		"nil int slice fields": {
-			input: &intSliceTest{},
-			want:  &intSliceTest{Usagi: ([]int)(nil)},
-		},
-		"int slice ptr fields": {
-			input: &intSlicePtrTest{Usagi: convertIntSlicePtr([]int{20190122, 20200501, 20200501})},
-			want:  &intSlicePtrTest{Usagi: convertIntSlicePtr([]int{20190122, 20200501, 20200501})},
-		},
-		"nil int slice ptr fields": {
-			input: &intSlicePtrTest{},
-			want:  &intSlicePtrTest{Usagi: (*[]int)(nil)},
-		},
-		"uint fields": {
-			input: &uintTest{Usagi: 20190122},
-			want:  &uintTest{Usagi: 20190122},
-		},
-		"uint slice fields": {
-			input: &uintSliceTest{Usagi: []uint{20190122, 20200501, 20200501}},
-			want:  &uintSliceTest{Usagi: []uint{20190122, 20200501, 20200501}},
-		},
-		"uint array fields": {
-			input: &uintArrayTest{Usagi: [3]uint{20190122, 20200501, 20200501}},
-			want:  &uintArrayTest{Usagi: [3]uint{20190122, 20200501, 20200501}},
-		},
-		"float64 slice": {
-			input: []float64{20190122, 20200501, 20200501},
-			want:  []float64{20190122, 20200501, 20200501},
-		},
-		"float64 array": {
-			input: [3]float64{20190122, 20200501, 20200501},
-			want:  [3]float64{20190122, 20200501, 20200501},
-		},
-		"nil float64 slice": {
-			input: ([]float64)(nil),
-			want:  ([]float64)(nil),
-		},
-		"float64 slice ptr": {
-			input: convertFloat64SlicePtr([]float64{20190122, 20200501, 20200501}),
-			want:  convertFloat64SlicePtr([]float64{20190122, 20200501, 20200501}),
-		},
-		"nil float64 slice ptr": {
-			input: (*[]float64)(nil),
-			want:  (*[]float64)(nil),
-		},
-		"float64 fields": {
-			input: &float64Test{Usagi: 20190122},
-			want:  &float64Test{Usagi: 20190122},
-		},
-		"zero float64 fields": {
-			input: &float64Test{},
-			want:  &float64Test{Usagi: 0},
-		},
-		"float64 ptr fields": {
-			input: &float64PtrTest{Usagi: convertFloat64Ptr(20190122)},
-			want:  &float64PtrTest{Usagi: convertFloat64Ptr(20190122)},
-		},
-		"nil float64 ptr fields": {
-			input: &float64PtrTest{},
-			want:  &float64PtrTest{Usagi: nil},
-		},
-		"float64 slice fields": {
-			input: &float64SliceTest{Usagi: []float64{20190122, 20200501, 20200501}},
-			want:  &float64SliceTest{Usagi: []float64{20190122, 20200501, 20200501}},
-		},
-		"float64 array fields": {
-			input: &float64ArrayTest{Usagi: [3]float64{20190122, 20200501, 20200501}},
-			want:  &float64ArrayTest{Usagi: [3]float64{20190122, 20200501, 20200501}},
-		},
-		"nil float64 slice fields": {
-			input: &float64SliceTest{},
-			want:  &float64SliceTest{Usagi: ([]float64)(nil)},
-		},
-		"float64 slice ptr fields": {
-			input: &float64SlicePtrTest{Usagi: convertFloat64SlicePtr([]float64{20190122, 20200501, 20200501})},
-			want:  &float64SlicePtrTest{Usagi: convertFloat64SlicePtr([]float64{20190122, 20200501, 20200501})},
-		},
-		"nil float64 slice ptr fields": {
-			input: &float64SlicePtrTest{},
-			want:  &float64SlicePtrTest{Usagi: (*[]float64)(nil)},
-		},
-		"bool fields": {
-			input: &boolTest{Usagi: true},
-			want:  &boolTest{Usagi: true},
-		},
-		"zero bool fields": {
-			input: &boolTest{},
-			want:  &boolTest{Usagi: false},
-		},
-		"bool ptr fields": {
-			input: &boolPtrTest{Usagi: convertBoolPtr(true)},
-			want:  &boolPtrTest{Usagi: convertBoolPtr(true)},
-		},
-		"nil bool ptr fields": {
-			input: &boolPtrTest{},
-			want:  &boolPtrTest{Usagi: (*bool)(nil)},
-		},
-		"byte slice": {
-			input: []byte{10, 11, 12},
-			want:  []byte{10, 11, 12},
-		},
-		"byte array": {
-			input: [4]byte{10, 11, 12, 13},
-			want:  [4]byte{10, 11, 12, 13},
-		},
-		"byte fields": {
-			input: byteTest{Usagi: 11},
-			want:  byteTest{Usagi: 11},
-		},
-		"byte slice fields": {
-			input: byteSliceTest{Usagi: []byte{11, 12, 13}},
-			want:  byteSliceTest{Usagi: []byte{11, 12, 13}},
-		},
-		"byte array fields": {
-			input: byteArrayTest{Usagi: [4]byte{11, 12, 13, 14}},
-			want:  byteArrayTest{Usagi: [4]byte{11, 12, 13, 14}},
-		},
-		"map string to string fields": {
-			input: &mapStringToStringTest{Usagi: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
-			want:  &mapStringToStringTest{Usagi: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
-		},
-		"map string to string slice fields": {
-			input: &mapStringToStringSliceTest{Usagi: []map[string]string{{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}}},
-			want:  &mapStringToStringSliceTest{Usagi: []map[string]string{{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}}},
-		},
-		"nil map string to string fields": {
-			input: &mapStringToStringTest{},
-			want:  &mapStringToStringTest{Usagi: (map[string]string)(nil)},
-		},
-		"map string to int fields": {
-			input: &mapStringToIntTest{Usagi: map[string]int{"うさぎ": 20190122, "うさぎ2": 20190122, "うさぎ3": 20190122}},
-			want:  &mapStringToIntTest{Usagi: map[string]int{"うさぎ": 20190122, "うさぎ2": 20190122, "うさぎ3": 20190122}},
-		},
-		"map string to float64 fields": {
-			input: &mapStringToFloat64Test{Usagi: map[string]float64{"うさぎ": 20190122, "うさぎ2": 20190122, "うさぎ3": 20190122}},
-			want:  &mapStringToFloat64Test{Usagi: map[string]float64{"うさぎ": 20190122, "うさぎ2": 20190122, "うさぎ3": 20190122}},
-		},
-		"map int to string fields": {
-			input: &mapIntToStringTest{Usagi: map[int]string{201901221: "ハァ？", 201901222: "ウラ", 201901223: "フゥン"}},
-			want:  &mapIntToStringTest{Usagi: map[int]string{201901221: "ハァ？", 201901222: "ウラ", 201901223: "フゥン"}},
-		},
-		"map int to int fields": {
-			input: &mapIntToIntTest{Usagi: map[int]int{1: 201901221, 2: 201901222, 3: 201901223}},
-			want:  &mapIntToIntTest{Usagi: map[int]int{1: 201901221, 2: 201901222, 3: 201901223}},
-		},
-		"map int to float64 fields": {
-			input: &mapIntToFloat64Test{Usagi: map[int]float64{1: 201901221, 2: 201901222, 3: 201901223}},
-			want:  &mapIntToFloat64Test{Usagi: map[int]float64{1: 201901221, 2: 201901222, 3: 201901223}},
-		},
-		"map struct to string fields": {
-			input: &mapStructToStringTest{Usagi: map[stringTest]string{{Usagi: "ウサギ１"}: "ハァ？", {Usagi: "ウサギ２"}: "ウラ", {Usagi: "ウサギ３"}: "フゥン"}},
-			want:  &mapStructToStringTest{Usagi: map[stringTest]string{{Usagi: "ウサギ１"}: "ハァ？", {Usagi: "ウサギ２"}: "ウラ", {Usagi: "ウサギ３"}: "フゥン"}},
-		},
-		"map struct to int fields": {
-			input: &mapStructToIntTest{Usagi: map[stringTest]int{{Usagi: "ウサギ１"}: 201901221, {Usagi: "ウサギ２"}: 201901222, {Usagi: "ウサギ３"}: 201901223}},
-			want:  &mapStructToIntTest{Usagi: map[stringTest]int{{Usagi: "ウサギ１"}: 201901221, {Usagi: "ウサギ２"}: 201901222, {Usagi: "ウサギ３"}: 201901223}},
-		},
-		"map struct to float64 fields": {
-			input: &mapStructToFloat64Test{Usagi: map[stringTest]float64{{Usagi: "ウサギ１"}: 201901221, {Usagi: "ウサギ２"}: 201901222, {Usagi: "ウサギ３"}: 201901223}},
-			want:  &mapStructToFloat64Test{Usagi: map[stringTest]float64{{Usagi: "ウサギ１"}: 201901221, {Usagi: "ウサギ２"}: 201901222, {Usagi: "ウサギ３"}: 201901223}},
-		},
-		"map struct to struct fields": {
-			input: &mapStructToStructTest{Usagi: map[stringTest]stringTest{{Usagi: "ウサギ１"}: {Usagi: "Rabbit1"}, {Usagi: "ウサギ２"}: {Usagi: "Rabbit2"}, {Usagi: "ウサギ３"}: {Usagi: "Rabbit3"}}},
-			want:  &mapStructToStructTest{Usagi: map[stringTest]stringTest{{Usagi: "ウサギ１"}: {Usagi: "Rabbit1"}, {Usagi: "ウサギ２"}: {Usagi: "Rabbit2"}, {Usagi: "ウサギ３"}: {Usagi: "Rabbit3"}}},
-		},
-		"struct fields": {
-			input: &structTest{
-				StringTest:      stringTest{Usagi: "ヤハッ！"},
-				StringSliceTest: stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
+			prepare: func(*Masker) {},
+			input:   uint(100),
+			want:    uint(100),
+		},
+		"float64": {
+			prepare: func(*Masker) {},
+			input:   float64(100.12),
+			want:    float64(100.12),
+		},
+		"complex128": {
+			prepare: func(*Masker) {},
+			input:   complex128(100 + 12i),
+			want:    complex128(100 + 12i),
+		},
+		"byte": {
+			prepare: func(*Masker) {},
+			input:   byte(2),
+			want:    byte(2),
+		},
+		"struct string": {
+			prepare: func(m *Masker) {
+				RegisterMaskStringFunc("test", func(arg, value string) (string, error) {
+					return "test", nil
+				})
 			},
-			want: &structTest{
-				StringTest:      stringTest{Usagi: "ヤハッ！"},
-				StringSliceTest: stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
+			input: struct {
+				String string `mask:"test"`
+			}{"チャス"},
+			want: struct {
+				String string `mask:"test"`
+			}{"test"},
+		},
+		"struct int": {
+			prepare: func(m *Masker) {
+				RegisterMaskIntFunc("test", func(arg string, value int) (int, error) {
+					return math.MaxInt, nil
+				})
 			},
+			input: struct {
+				Int int `mask:"test"`
+			}{1234},
+			want: struct {
+				Int int `mask:"test"`
+			}{math.MaxInt},
 		},
-		"zero struct fields": {
-			input: &structTest{},
-			want: &structTest{
-				StringTest:      stringTest{},
-				StringSliceTest: stringSliceTest{},
+		"struct uint": {
+			prepare: func(m *Masker) {
+				RegisterMaskUintFunc("test", func(arg string, value uint) (uint, error) {
+					return math.MaxUint, nil
+				})
 			},
+			input: struct {
+				Uint uint `mask:"test"`
+			}{1234},
+			want: struct {
+				Uint uint `mask:"test"`
+			}{math.MaxUint},
 		},
-		"struct slice fields": {
-			input: &structSliceTest{
-				SliceTest: []stringTest{
-					{Usagi: "ハァ？"}, {Usagi: "ウラ"}, {Usagi: "フゥン"},
-				},
+		"struct float64": {
+			prepare: func(m *Masker) {
+				RegisterMaskFloat64Func("test", func(arg string, value float64) (float64, error) {
+					return math.MaxFloat64, nil
+				})
 			},
-			want: &structSliceTest{
-				SliceTest: []stringTest{{
-					Usagi: "ハァ？"}, {Usagi: "ウラ"}, {Usagi: "フゥン"},
-				},
-			},
-		},
-		"nil struct slice fields": {
-			input: &structSliceTest{},
-			want:  &structSliceTest{SliceTest: ([]stringTest)(nil)},
-		},
-		"unexported fields": {
-			input: &unexportedTest{usagi: "ヤハッ！"},
-			want:  &unexportedTest{},
-		},
-		"string in any fields": {
-			input: anyTest{Usagi: "hoge"},
-			want:  anyTest{Usagi: "hoge"},
-		},
-		"int in any fields": {
-			input: anyTest{Usagi: 2},
-			want:  anyTest{Usagi: 2},
-		},
-		"string struct in any fields": {
-			input: anyTest{Usagi: stringTest{"hoge"}},
-			want:  anyTest{Usagi: stringTest{"hoge"}},
-		},
-		"int struct in any fields": {
-			input: anyTest{Usagi: intTest{2}},
-			want:  anyTest{Usagi: intTest{2}},
-		},
-		"nil in any fields": {
-			input: anyTest{Usagi: nil},
-			want:  anyTest{Usagi: nil},
-		},
-		"string slice in any slice fields": {
-			input: anySliceTest{Usagis: []any{"hoge", "fuga"}},
-			want:  anySliceTest{Usagis: []any{"hoge", "fuga"}},
-		},
-		"string struct slice in any slice fields": {
-			input: anySliceTest{Usagis: []any{stringTest{"hoge"}, stringTest{"fuga"}}},
-			want:  anySliceTest{Usagis: []any{stringTest{"hoge"}, stringTest{"fuga"}}},
-		},
-		"int slice in any slice fields": {
-			input: anySliceTest{Usagis: []any{3, 3}},
-			want:  anySliceTest{Usagis: []any{3, 3}},
-		},
-		"int struct slice in any slice fields": {
-			input: anySliceTest{Usagis: []any{intTest{3}, intTest{3}}},
-			want:  anySliceTest{Usagis: []any{intTest{3}, intTest{3}}},
-		},
-		"nil in any slice fields": {
-			input: anySliceTest{Usagis: nil},
-			want:  anySliceTest{Usagis: nil},
-		},
-		"string struct in any pointer fields": {
-			input: anyPtrTest{Usagi: convertAnyPtr(stringTest{"hoge"})},
-			want:  anyPtrTest{Usagi: convertAnyPtr(stringTest{"hoge"})},
-		},
-		"int struct in any pointer fields": {
-			input: anyPtrTest{Usagi: convertAnyPtr(intTest{2})},
-			want:  anyPtrTest{Usagi: convertAnyPtr(intTest{2})},
+			input: struct {
+				Float64 float64 `mask:"test"`
+			}{1234.5678},
+			want: struct {
+				Float64 float64 `mask:"test"`
+			}{math.MaxFloat64},
 		},
 	}
 
 	for name, tt := range tests {
 		for _, cache := range []bool{true, false} {
-			t.Run(defaultTestCase(name), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s - cache enable=%t", name, cache), func(t *testing.T) {
 				defer cleanup(t)
 				defaultMasker.Cache(cache)
+				tt.prepare(defaultMasker)
 				got, err := Mask(tt.input)
-				assert.Nil(t, err)
-				if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				if tt.isErr {
+					if err == nil {
+						t.Error("want an error to occur")
+					}
+					return
+				} else if err != nil {
+					t.Fatal(err)
+				}
+
+				if diff := cmp.Diff(tt.want, got); diff != "" {
 					t.Error(diff)
 				}
 			})
-			t.Run(newMaskerTestCase(name), func(t *testing.T) {
-				m := newMasker()
+		}
+	}
+}
+
+func TestMask_Primitive(t *testing.T) {
+	type Tag struct {
+		String     string     `mask:"test"`
+		Int        int        `mask:"test"`
+		Int8       int8       `mask:"test"`
+		Int16      int16      `mask:"test"`
+		Int32      int32      `mask:"test"`
+		Int64      int64      `mask:"test"`
+		Uint       uint       `mask:"test"`
+		Uint8      uint8      `mask:"test"`
+		Uint16     uint16     `mask:"test"`
+		Uint32     uint32     `mask:"test"`
+		Uint64     uint64     `mask:"test"`
+		Float32    float32    `mask:"test"`
+		Float64    float64    `mask:"test"`
+		Complex64  complex64  `mask:"test"`
+		Complex128 complex128 `mask:"test"`
+		Byte       byte       `mask:"test"`
+	}
+	type NoTag struct {
+		String     string
+		Int        int
+		Int8       int8
+		Int16      int16
+		Int32      int32
+		Int64      int64
+		Uint       uint
+		Uint8      uint8
+		Uint16     uint16
+		Uint32     uint32
+		Uint64     uint64
+		Float32    float32
+		Float64    float64
+		Complex64  complex64
+		Complex128 complex128
+		Byte       byte
+	}
+	type Test struct {
+		Tag
+		NoTag
+	}
+	input := Test{
+		Tag: Tag{
+			String:     "サンクチュアリ -聖域-",
+			Int:        1000,
+			Int8:       12,
+			Int16:      2000,
+			Int32:      3000,
+			Int64:      4000,
+			Uint:       5000,
+			Uint8:      12,
+			Uint16:     6000,
+			Uint32:     7000,
+			Uint64:     8000,
+			Float32:    123.456,
+			Float64:    654.321,
+			Complex64:  (1234 + 10i),
+			Complex128: (4321 + 20i),
+			Byte:       2,
+		},
+		NoTag: NoTag{
+			String:     "サンクチュアリ -聖域-",
+			Int:        1000,
+			Int8:       12,
+			Int16:      2000,
+			Int32:      3000,
+			Int64:      4000,
+			Uint:       5000,
+			Uint8:      12,
+			Uint16:     6000,
+			Uint32:     7000,
+			Uint64:     8000,
+			Float32:    123.456,
+			Float64:    654.321,
+			Complex64:  (1234 + 10i),
+			Complex128: (4321 + 20i),
+			Byte:       2,
+		},
+	}
+	tests := map[string]struct {
+		prepare func(*Masker)
+		want    Test
+		isErr   bool
+	}{
+		"no masking functions": {
+			prepare: func(m *Masker) {},
+			want:    input,
+		},
+		"register masking functions": {
+			prepare: func(m *Masker) {
+				registerTestMaskFunc(m, "test")
+			},
+			want: Test{
+				Tag: Tag{
+					String:     "test",
+					Int:        math.MaxInt,
+					Int8:       -1, // overflow
+					Int16:      -1, // overflow
+					Int32:      -1, // overflow
+					Int64:      math.MaxInt64,
+					Uint:       math.MaxUint,
+					Uint8:      math.MaxUint8,  // overflow
+					Uint16:     math.MaxUint16, // overflow
+					Uint32:     math.MaxUint32, // overflow
+					Uint64:     math.MaxUint64,
+					Float32:    float32(math.Inf(0)), // overflow
+					Float64:    math.MaxFloat64,
+					Complex64:  (1234 + 10i),
+					Complex128: (4321 + 20i),
+					Byte:       255, // overflow
+				},
+				NoTag: input.NoTag,
+			},
+		},
+		"register mask field name": {
+			prepare: func(m *Masker) {
+				registerTestMaskFunc(m, "field")
+				m.RegisterMaskField("String", "field")
+				m.RegisterMaskField("Int", "field")
+				m.RegisterMaskField("Int8", "field")
+				m.RegisterMaskField("Int16", "field")
+				m.RegisterMaskField("Int32", "field")
+				m.RegisterMaskField("Int64", "field")
+				m.RegisterMaskField("Uint", "field")
+				m.RegisterMaskField("Uint8", "field")
+				m.RegisterMaskField("Uint16", "field")
+				m.RegisterMaskField("Uint32", "field")
+				m.RegisterMaskField("Uint64", "field")
+				m.RegisterMaskField("Float32", "field")
+				m.RegisterMaskField("Float64", "field")
+				m.RegisterMaskField("Complex64", "field")
+				m.RegisterMaskField("Complex128", "field")
+				m.RegisterMaskField("Byte", "field")
+			},
+			want: Test{
+				Tag: input.Tag,
+				NoTag: NoTag{
+					String:     "test",
+					Int:        math.MaxInt,
+					Int8:       -1, // overflow
+					Int16:      -1, // overflow
+					Int32:      -1, // overflow
+					Int64:      math.MaxInt64,
+					Uint:       math.MaxUint,
+					Uint8:      math.MaxUint8,  // overflow
+					Uint16:     math.MaxUint16, // overflow
+					Uint32:     math.MaxUint32, // overflow
+					Uint64:     math.MaxUint64,
+					Float32:    float32(math.Inf(0)), // overflow
+					Float64:    math.MaxFloat64,
+					Complex64:  (1234 + 10i),
+					Complex128: (4321 + 20i),
+					Byte:       255, // overflow
+				},
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		for _, cache := range []bool{true, false} {
+			t.Run(fmt.Sprintf("%s - cache enable=%t", name, cache), func(t *testing.T) {
+				m := NewMasker()
 				m.Cache(cache)
+				tt.prepare(m)
+				got, err := m.Mask(input)
+				if tt.isErr {
+					if err == nil {
+						t.Error("want an error to occur")
+					}
+					return
+				} else if err != nil {
+					t.Fatal(err)
+				}
+
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Error(diff)
+				}
+			})
+		}
+	}
+}
+
+func TestMask_Array(t *testing.T) {
+	type Struct1 struct {
+		String string `mask:"test"`
+	}
+	type Struct2 struct {
+		String string
+	}
+	type Tag struct {
+		String     [3]string     `mask:"test"`
+		Int        [3]int        `mask:"test"`
+		Uint       [3]uint       `mask:"test"`
+		Float64    [3]float64    `mask:"test"`
+		Complex128 [3]complex128 `mask:"test"`
+		Byte       [3]byte       `mask:"test"`
+		Struct     [3]Struct1    `mask:"test"`
+	}
+	type NoTag struct {
+		String     [3]string
+		Int        [3]int
+		Uint       [3]uint
+		Float64    [3]float64
+		Complex128 [3]complex128
+		Byte       [3]byte
+		Struct     [3]Struct2
+	}
+	type Test struct {
+		Tag
+		NoTag
+	}
+	input := Test{
+		Tag: Tag{
+			String:     [3]string{"猿将", "猿谷", "猿桜"},
+			Int:        [3]int{-1, 10, 100},
+			Uint:       [3]uint{1, 2, 3},
+			Float64:    [3]float64{1.1, 1000.123, 999.0},
+			Complex128: [3]complex128{100 + 1i, 10i, 10},
+			Byte:       [3]byte{1, 2, 3},
+			Struct:     [3]Struct1{{"猿空"}, {"猿岳"}, {"猿河"}},
+		},
+		NoTag: NoTag{
+			String:     [3]string{"猿将", "猿谷", "猿桜"},
+			Int:        [3]int{-1, 10, 100},
+			Uint:       [3]uint{1, 2, 3},
+			Float64:    [3]float64{1.1, 1000.123, 999.0},
+			Complex128: [3]complex128{100 + 1i, 10i, 10},
+			Byte:       [3]byte{1, 2, 3},
+			Struct:     [3]Struct2{{"猿空"}, {"猿岳"}, {"猿河"}},
+		},
+	}
+	tests := map[string]struct {
+		prepare func(*Masker)
+		want    Test
+		isErr   bool
+	}{
+		"no masking functions": {
+			prepare: func(m *Masker) {},
+			want:    input,
+		},
+		"register masking functions": {
+			prepare: func(m *Masker) {
+				registerTestMaskFunc(m, "test")
+			},
+			want: Test{
+				Tag: Tag{
+					String:     [3]string{"test", "test", "test"},
+					Int:        [3]int{math.MaxInt, math.MaxInt, math.MaxInt},
+					Uint:       [3]uint{math.MaxUint, math.MaxUint, math.MaxUint},
+					Float64:    [3]float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
+					Complex128: [3]complex128{100 + 1i, 10i, 10},
+					Byte:       [3]byte{255, 255, 255},
+					Struct:     [3]Struct1{{"test"}, {"test"}, {"test"}},
+				},
+				NoTag: input.NoTag,
+			},
+		},
+		"register mask field name": {
+			prepare: func(m *Masker) {
+				registerTestMaskFunc(m, "field")
+				m.RegisterMaskField("String", "field")
+				m.RegisterMaskField("Int", "field")
+				m.RegisterMaskField("Int8", "field")
+				m.RegisterMaskField("Int16", "field")
+				m.RegisterMaskField("Int32", "field")
+				m.RegisterMaskField("Int64", "field")
+				m.RegisterMaskField("Uint", "field")
+				m.RegisterMaskField("Uint8", "field")
+				m.RegisterMaskField("Uint16", "field")
+				m.RegisterMaskField("Uint32", "field")
+				m.RegisterMaskField("Uint64", "field")
+				m.RegisterMaskField("Float32", "field")
+				m.RegisterMaskField("Float64", "field")
+				m.RegisterMaskField("Complex64", "field")
+				m.RegisterMaskField("Complex128", "field")
+				m.RegisterMaskField("Byte", "field")
+				m.RegisterMaskField("Struct", "field")
+			},
+			want: Test{
+				Tag: input.Tag,
+				NoTag: NoTag{
+					String:     [3]string{"test", "test", "test"},
+					Int:        [3]int{math.MaxInt, math.MaxInt, math.MaxInt},
+					Uint:       [3]uint{math.MaxUint, math.MaxUint, math.MaxUint},
+					Float64:    [3]float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
+					Complex128: [3]complex128{100 + 1i, 10i, 10},
+					Byte:       [3]byte{255, 255, 255},
+					Struct:     [3]Struct2{{"test"}, {"test"}, {"test"}},
+				},
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		for _, cache := range []bool{true, false} {
+			t.Run(fmt.Sprintf("%s - cache enable=%t", name, cache), func(t *testing.T) {
+				m := NewMasker()
+				tt.prepare(m)
+				got, err := m.Mask(input)
+				if tt.isErr {
+					if err == nil {
+						t.Error("want an error to occur")
+					}
+					return
+				} else if err != nil {
+					t.Fatal(err)
+				}
+
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Error(diff)
+				}
+			})
+		}
+	}
+}
+
+func TestMask_Slice(t *testing.T) {
+	type Struct1 struct {
+		String string `mask:"test"`
+	}
+	type Struct2 struct {
+		String string
+	}
+	type Tag struct {
+		String     []string     `mask:"test"`
+		Int        []int        `mask:"test"`
+		Uint       []uint       `mask:"test"`
+		Float64    []float64    `mask:"test"`
+		Complex128 []complex128 `mask:"test"`
+		Byte       []byte       `mask:"test"`
+		Struct     []Struct1    `mask:"test"`
+	}
+	type NoTag struct {
+		String     []string
+		Int        []int
+		Uint       []uint
+		Float64    []float64
+		Complex128 []complex128
+		Byte       []byte
+		Struct     []Struct2
+	}
+	type Test struct {
+		Tag
+		NoTag
+	}
+	input := Test{
+		Tag: Tag{
+			String:     []string{"猿将", "猿谷", "猿桜"},
+			Int:        []int{-1, 10, 100},
+			Uint:       []uint{1, 2, 3},
+			Float64:    []float64{1.1, 1000.123, 999.0},
+			Complex128: []complex128{100 + 1i, 10i, 10},
+			Byte:       []byte{1, 2, 3},
+			Struct:     []Struct1{{"猿空"}, {"猿岳"}, {"猿河"}},
+		},
+		NoTag: NoTag{
+			String:     []string{"猿将", "猿谷", "猿桜"},
+			Int:        []int{-1, 10, 100},
+			Uint:       []uint{1, 2, 3},
+			Float64:    []float64{1.1, 1000.123, 999.0},
+			Complex128: []complex128{100 + 1i, 10i, 10},
+			Byte:       []byte{1, 2, 3},
+			Struct:     []Struct2{{"猿空"}, {"猿岳"}, {"猿河"}},
+		},
+	}
+	tests := map[string]struct {
+		prepare func(*Masker)
+		input   Test
+		want    Test
+		isErr   bool
+	}{
+		"nil": {
+			prepare: func(m *Masker) {},
+			input:   Test{},
+			want:    Test{},
+		},
+		"no masking functions": {
+			prepare: func(m *Masker) {},
+			input:   input,
+			want:    input,
+		},
+		"register masking functions": {
+			prepare: func(m *Masker) {
+				registerTestMaskFunc(m, "test")
+			},
+			input: input,
+			want: Test{
+				Tag: Tag{
+					String:     []string{"test", "test", "test"},
+					Int:        []int{math.MaxInt, math.MaxInt, math.MaxInt},
+					Uint:       []uint{math.MaxUint, math.MaxUint, math.MaxUint},
+					Float64:    []float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
+					Complex128: []complex128{100 + 1i, 10i, 10},
+					Byte:       []byte{255, 255, 255},
+					Struct:     []Struct1{{"test"}, {"test"}, {"test"}},
+				},
+				NoTag: input.NoTag,
+			},
+		},
+		"register mask field name": {
+			prepare: func(m *Masker) {
+				registerTestMaskFunc(m, "field")
+				m.RegisterMaskField("String", "field")
+				m.RegisterMaskField("Int", "field")
+				m.RegisterMaskField("Int8", "field")
+				m.RegisterMaskField("Int16", "field")
+				m.RegisterMaskField("Int32", "field")
+				m.RegisterMaskField("Int64", "field")
+				m.RegisterMaskField("Uint", "field")
+				m.RegisterMaskField("Uint8", "field")
+				m.RegisterMaskField("Uint16", "field")
+				m.RegisterMaskField("Uint32", "field")
+				m.RegisterMaskField("Uint64", "field")
+				m.RegisterMaskField("Float32", "field")
+				m.RegisterMaskField("Float64", "field")
+				m.RegisterMaskField("Complex64", "field")
+				m.RegisterMaskField("Complex128", "field")
+				m.RegisterMaskField("Byte", "field")
+				m.RegisterMaskField("Struct", "field")
+			},
+			input: input,
+			want: Test{
+				Tag: input.Tag,
+				NoTag: NoTag{
+					String:     []string{"test", "test", "test"},
+					Int:        []int{math.MaxInt, math.MaxInt, math.MaxInt},
+					Uint:       []uint{math.MaxUint, math.MaxUint, math.MaxUint},
+					Float64:    []float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
+					Complex128: []complex128{100 + 1i, 10i, 10},
+					Byte:       []byte{255, 255, 255},
+					Struct:     []Struct2{{"test"}, {"test"}, {"test"}},
+				},
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		for _, cache := range []bool{true, false} {
+			t.Run(fmt.Sprintf("%s - cache enable=%t", name, cache), func(t *testing.T) {
+				m := NewMasker()
+				tt.prepare(m)
 				got, err := m.Mask(tt.input)
-				assert.Nil(t, err)
-				if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
+				if tt.isErr {
+					if err == nil {
+						t.Error("want an error to occur")
+					}
+					return
+				} else if err != nil {
+					t.Fatal(err)
+				}
+
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Error(diff)
+				}
+			})
+		}
+	}
+}
+
+func TestMask_Map(t *testing.T) {
+	type Key struct {
+		Seq int
+	}
+	type Tag struct {
+		String     map[string]string     `mask:"test"`
+		Int        map[string]int        `mask:"test"`
+		Uint       map[string]uint       `mask:"test"`
+		Float64    map[string]float64    `mask:"test"`
+		Complex128 map[string]complex128 `mask:"test"`
+		Byte       map[string]byte       `mask:"test"`
+		IntKey     map[int]string        `mask:"test"`
+		StructKey  map[Key]string        `mask:"test"`
+	}
+	type NoTag struct {
+		String     map[string]string
+		Int        map[string]int
+		Uint       map[string]uint
+		Float64    map[string]float64
+		Complex128 map[string]complex128
+		Byte       map[string]byte
+		StringKey  map[string]string
+		IntKey     map[int]string
+		StructKey  map[Key]string
+	}
+	type Test struct {
+		Tag
+		NoTag
+	}
+
+	input := Test{
+		Tag: Tag{
+			String:     map[string]string{"猿将": "大関", "猿谷": "小結", "猿桜": "三枚目"},
+			Int:        map[string]int{"猿将": -1, "猿谷": 10, "猿桜": 100},
+			Uint:       map[string]uint{"猿将": 1, "猿谷": 2, "猿桜": 3},
+			Float64:    map[string]float64{"猿将": 1.1, "猿谷": 1000.123, "猿桜": 999.0},
+			Complex128: map[string]complex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
+			Byte:       map[string]byte{"猿将": 1, "猿谷": 2, "猿桜": 3},
+			IntKey:     map[int]string{1: "猿将", 2: "猿谷", 3: "猿桜"},
+			StructKey:  map[Key]string{{1}: "猿将", {2}: "猿谷", {3}: "猿桜"},
+		},
+		NoTag: NoTag{
+			String:     map[string]string{"猿将": "大関", "猿谷": "小結", "猿桜": "三枚目"},
+			Int:        map[string]int{"猿将": -1, "猿谷": 10, "猿桜": 100},
+			Uint:       map[string]uint{"猿将": 1, "猿谷": 2, "猿桜": 3},
+			Float64:    map[string]float64{"猿将": 1.1, "猿谷": 1000.123, "猿桜": 999.0},
+			Complex128: map[string]complex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
+			Byte:       map[string]byte{"猿将": 1, "猿谷": 2, "猿桜": 3},
+			StringKey:  map[string]string{"猿将": "大関", "猿谷": "小結", "猿桜": "三枚目"},
+			IntKey:     map[int]string{1: "猿将", 2: "猿谷", 3: "猿桜"},
+			StructKey:  map[Key]string{{1}: "猿将", {2}: "猿谷", {3}: "猿桜"},
+		},
+	}
+	tests := map[string]struct {
+		prepare func(*Masker)
+		want    Test
+		isErr   bool
+	}{
+		"no masking functions": {
+			prepare: func(m *Masker) {},
+			want:    input,
+		},
+		"register masking functions": {
+			prepare: func(m *Masker) {
+				registerTestMaskFunc(m, "test")
+			},
+			want: Test{
+				Tag: Tag{
+					String:     map[string]string{"猿将": "test", "猿谷": "test", "猿桜": "test"},
+					Int:        map[string]int{"猿将": math.MaxInt, "猿谷": math.MaxInt, "猿桜": math.MaxInt},
+					Uint:       map[string]uint{"猿将": math.MaxUint, "猿谷": math.MaxUint, "猿桜": math.MaxUint},
+					Float64:    map[string]float64{"猿将": math.MaxFloat64, "猿谷": math.MaxFloat64, "猿桜": math.MaxFloat64},
+					Complex128: map[string]complex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
+					Byte:       map[string]byte{"猿将": 255, "猿谷": 255, "猿桜": 255},
+					IntKey:     map[int]string{1: "test", 2: "test", 3: "test"},
+					StructKey:  map[Key]string{{1}: "test", {2}: "test", {3}: "test"},
+				},
+				NoTag: input.NoTag,
+			},
+		},
+		"register mask field name": {
+			prepare: func(m *Masker) {
+				registerTestMaskFunc(m, "field")
+				m.RegisterMaskField("String", "field")
+				m.RegisterMaskField("Int", "field")
+				m.RegisterMaskField("Int8", "field")
+				m.RegisterMaskField("Int16", "field")
+				m.RegisterMaskField("Int32", "field")
+				m.RegisterMaskField("Int64", "field")
+				m.RegisterMaskField("Uint", "field")
+				m.RegisterMaskField("Uint8", "field")
+				m.RegisterMaskField("Uint16", "field")
+				m.RegisterMaskField("Uint32", "field")
+				m.RegisterMaskField("Uint64", "field")
+				m.RegisterMaskField("Float32", "field")
+				m.RegisterMaskField("Float64", "field")
+				m.RegisterMaskField("Complex64", "field")
+				m.RegisterMaskField("Complex128", "field")
+				m.RegisterMaskField("Byte", "field")
+				m.RegisterMaskField("IntKey", "field")
+				m.RegisterMaskField("StructKey", "field")
+				// map key
+				m.RegisterMaskField("猿将", "field")
+			},
+			want: Test{
+				Tag: input.Tag,
+				NoTag: NoTag{
+					String:     map[string]string{"猿将": "test", "猿谷": "test", "猿桜": "test"},
+					Int:        map[string]int{"猿将": math.MaxInt, "猿谷": math.MaxInt, "猿桜": math.MaxInt},
+					Uint:       map[string]uint{"猿将": math.MaxUint, "猿谷": math.MaxUint, "猿桜": math.MaxUint},
+					Float64:    map[string]float64{"猿将": math.MaxFloat64, "猿谷": math.MaxFloat64, "猿桜": math.MaxFloat64},
+					Complex128: map[string]complex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
+					Byte:       map[string]byte{"猿将": 255, "猿谷": 255, "猿桜": 255},
+					StringKey:  map[string]string{"猿将": "test", "猿谷": "小結", "猿桜": "三枚目"},
+					IntKey:     map[int]string{1: "test", 2: "test", 3: "test"},
+					StructKey:  map[Key]string{{1}: "test", {2}: "test", {3}: "test"},
+				},
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		for _, cache := range []bool{true, false} {
+			t.Run(fmt.Sprintf("%s - cache enable=%t", name, cache), func(t *testing.T) {
+				m := NewMasker()
+				tt.prepare(m)
+				got, err := m.Mask(input)
+				if tt.isErr {
+					if err == nil {
+						t.Error("want an error to occur")
+					}
+					return
+				} else if err != nil {
+					t.Fatal(err)
+				}
+
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Error(diff)
+				}
+			})
+		}
+	}
+}
+
+func TestMask_Pointer(t *testing.T) {
+	type Struct1 struct {
+		String string `mask:"test"`
+	}
+	type Struct2 struct {
+		String string
+	}
+	type Tag struct {
+		String     *string            `mask:"test"`
+		Int        *int               `mask:"test"`
+		Uint       *uint              `mask:"test"`
+		Float64    *float64           `mask:"test"`
+		Complex128 *complex128        `mask:"test"`
+		Byte       *byte              `mask:"test"`
+		Array      *[3]string         `mask:"test"`
+		Slice      *[]string          `mask:"test"`
+		Map        *map[string]string `mask:"test"`
+		Struct     *Struct1
+	}
+	type NoTag struct {
+		String     *string
+		Int        *int
+		Uint       *uint
+		Float64    *float64
+		Complex128 *complex128
+		Byte       *byte
+		Array      *[3]string
+		Slice      *[]string
+		Map        *map[string]string
+		Struct     *Struct2
+	}
+	type Test struct {
+		Tag
+		NoTag
+	}
+	input := Test{
+		Tag: Tag{
+			String:     convertStringPtr("龍谷"),
+			Int:        convertIntPtr(123),
+			Uint:       convertUintPtr(321),
+			Float64:    convertFloat64Ptr(123.456),
+			Complex128: convertComplex128Ptr(123 + 456i),
+			Byte:       convertBytePtr(2),
+			Array:      &([3]string{"序ノ口", "序二段", "三枚目"}),
+			Slice:      &[]string{"序ノ口", "序二段", "三枚目"},
+			Map:        &map[string]string{"序ノ口": "石川", "序二段": "高橋", "三枚目": "猿河"},
+			Struct:     &Struct1{"稽古場"},
+		},
+		NoTag: NoTag{
+			String:     convertStringPtr("龍谷"),
+			Int:        convertIntPtr(123),
+			Uint:       convertUintPtr(321),
+			Float64:    convertFloat64Ptr(123.456),
+			Complex128: convertComplex128Ptr(123 + 456i),
+			Byte:       convertBytePtr(2),
+			Array:      &([3]string{"序ノ口", "序二段", "三枚目"}),
+			Slice:      &[]string{"序ノ口", "序二段", "三枚目"},
+			Map:        &map[string]string{"序ノ口": "石川", "序二段": "高橋", "三枚目": "猿河"},
+			Struct:     &Struct2{"稽古場"},
+		},
+	}
+
+	tests := map[string]struct {
+		prepare func(*Masker)
+		input   Test
+		want    Test
+		isErr   bool
+	}{
+		"nil": {
+			prepare: func(m *Masker) {},
+			input:   Test{},
+			want:    Test{},
+		},
+		"no masking functions": {
+			prepare: func(m *Masker) {},
+			input:   input,
+			want:    input,
+		},
+		"register masking functions": {
+			prepare: func(m *Masker) {
+				registerTestMaskFunc(m, "test")
+			},
+			input: input,
+			want: Test{
+				Tag: Tag{
+					String:     convertStringPtr("test"),
+					Int:        convertIntPtr(math.MaxInt),
+					Uint:       convertUintPtr(math.MaxUint),
+					Float64:    convertFloat64Ptr(math.MaxFloat64),
+					Complex128: convertComplex128Ptr(123 + 456i),
+					Byte:       convertBytePtr(255),
+					Array:      &([3]string{"test", "test", "test"}),
+					Slice:      &[]string{"test", "test", "test"},
+					Map:        &map[string]string{"序ノ口": "test", "序二段": "test", "三枚目": "test"},
+					Struct:     &Struct1{"test"},
+				},
+				NoTag: input.NoTag,
+			},
+		},
+		"register mask field name": {
+			prepare: func(m *Masker) {
+				registerTestMaskFunc(m, "field")
+				m.RegisterMaskField("String", "field")
+				m.RegisterMaskField("Int", "field")
+				m.RegisterMaskField("Uint", "field")
+				m.RegisterMaskField("Float64", "field")
+				m.RegisterMaskField("Complex128", "field")
+				m.RegisterMaskField("Byte", "field")
+				m.RegisterMaskField("Array", "field")
+				m.RegisterMaskField("Slice", "field")
+				m.RegisterMaskField("Map", "field")
+			},
+			input: input,
+			want: Test{
+				Tag: input.Tag,
+				NoTag: NoTag{
+					String:     convertStringPtr("test"),
+					Int:        convertIntPtr(math.MaxInt),
+					Uint:       convertUintPtr(math.MaxUint),
+					Float64:    convertFloat64Ptr(math.MaxFloat64),
+					Complex128: convertComplex128Ptr(123 + 456i),
+					Byte:       convertBytePtr(255),
+					Array:      &([3]string{"test", "test", "test"}),
+					Slice:      &[]string{"test", "test", "test"},
+					Map:        &map[string]string{"序ノ口": "test", "序二段": "test", "三枚目": "test"},
+					Struct:     &Struct2{"test"},
+				},
+			},
+		},
+	}
+	for name, tt := range tests {
+		for _, cache := range []bool{true, false} {
+			t.Run(fmt.Sprintf("%s - cache enable=%t", name, cache), func(t *testing.T) {
+				m := NewMasker()
+				tt.prepare(m)
+				got, err := m.Mask(tt.input)
+				if tt.isErr {
+					if err == nil {
+						t.Error("want an error to occur")
+					}
+					return
+				} else if err != nil {
+					t.Fatal(err)
+				}
+
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Error(diff)
+				}
+			})
+		}
+	}
+}
+
+func TestMask_Interface(t *testing.T) {
+	type TestAny interface{}
+	type Struct1 struct {
+		String string `mask:"test"`
+	}
+	type Struct2 struct {
+		String string
+	}
+	type Tag struct {
+		String     TestAny `mask:"test"`
+		Int        TestAny `mask:"test"`
+		Uint       TestAny `mask:"test"`
+		Float64    TestAny `mask:"test"`
+		Complex128 TestAny `mask:"test"`
+		Byte       TestAny `mask:"test"`
+		Array      TestAny `mask:"test"`
+		Slice      TestAny `mask:"test"`
+		Map        TestAny `mask:"test"`
+		Struct     TestAny
+		Pointer    TestAny
+	}
+	type NoTag struct {
+		String     TestAny
+		Int        TestAny
+		Uint       TestAny
+		Float64    TestAny
+		Complex128 TestAny
+		Byte       TestAny
+		Array      TestAny
+		Slice      TestAny
+		Map        TestAny
+		Struct     TestAny
+		Pointer    TestAny
+	}
+	type Test struct {
+		Tag
+		NoTag
+	}
+	input := Test{
+		Tag: Tag{
+			String:     "龍谷",
+			Int:        123,
+			Uint:       321,
+			Float64:    123.456,
+			Complex128: 123 + 456i,
+			Byte:       2,
+			Array:      [3]string{"序ノ口", "序二段", "三枚目"},
+			Slice:      []string{"序ノ口", "序二段", "三枚目"},
+			Map:        map[string]string{"序ノ口": "石川", "序二段": "高橋", "三枚目": "猿河"},
+			Struct:     Struct1{"稽古場"},
+			Pointer:    &Struct1{"稽古場"},
+		},
+		NoTag: NoTag{
+			String:     "龍谷",
+			Int:        123,
+			Uint:       321,
+			Float64:    123.456,
+			Complex128: 123 + 456i,
+			Byte:       2,
+			Array:      [3]string{"序ノ口", "序二段", "三枚目"},
+			Slice:      []string{"序ノ口", "序二段", "三枚目"},
+			Map:        map[string]string{"序ノ口": "石川", "序二段": "高橋", "三枚目": "猿河"},
+			Struct:     Struct2{"稽古場"},
+			Pointer:    &Struct2{"稽古場"},
+		},
+	}
+
+	tests := map[string]struct {
+		prepare func(*Masker)
+		input   Test
+		want    Test
+		isErr   bool
+	}{
+		"nil": {
+			prepare: func(m *Masker) {},
+			input:   Test{},
+			want:    Test{},
+		},
+		"no masking functions": {
+			prepare: func(m *Masker) {},
+			input:   input,
+			want:    input,
+		},
+		"register masking functions": {
+			prepare: func(m *Masker) {
+				registerTestMaskFunc(m, "test")
+			},
+			input: input,
+			want: Test{
+				Tag: Tag{
+					String:     "test",
+					Int:        math.MaxInt,
+					Uint:       math.MaxInt,
+					Float64:    math.MaxFloat64,
+					Complex128: 123 + 456i,
+					Byte:       math.MaxInt,
+					Array:      [3]string{"test", "test", "test"},
+					Slice:      []string{"test", "test", "test"},
+					Map:        map[string]string{"序ノ口": "test", "序二段": "test", "三枚目": "test"},
+					Struct:     Struct1{"test"},
+					Pointer:    &Struct1{"test"},
+				},
+				NoTag: input.NoTag,
+			},
+		},
+		"register mask field name": {
+			prepare: func(m *Masker) {
+				registerTestMaskFunc(m, "field")
+				m.RegisterMaskField("String", "field")
+				m.RegisterMaskField("Int", "field")
+				m.RegisterMaskField("Uint", "field")
+				m.RegisterMaskField("Float64", "field")
+				m.RegisterMaskField("Complex128", "field")
+				m.RegisterMaskField("Byte", "field")
+				m.RegisterMaskField("Array", "field")
+				m.RegisterMaskField("Slice", "field")
+				m.RegisterMaskField("Map", "field")
+			},
+			input: input,
+			want: Test{
+				Tag: input.Tag,
+				NoTag: NoTag{
+					String:     "test",
+					Int:        math.MaxInt,
+					Uint:       math.MaxInt,
+					Float64:    math.MaxFloat64,
+					Complex128: 123 + 456i,
+					Byte:       math.MaxInt,
+					Array:      [3]string{"test", "test", "test"},
+					Slice:      []string{"test", "test", "test"},
+					Map:        map[string]string{"序ノ口": "test", "序二段": "test", "三枚目": "test"},
+					Struct:     Struct2{"test"},
+					Pointer:    &Struct2{"test"},
+				},
+			},
+		},
+	}
+	for name, tt := range tests {
+		for _, cache := range []bool{true, false} {
+			t.Run(fmt.Sprintf("%s - cache enable=%t", name, cache), func(t *testing.T) {
+				m := NewMasker()
+				tt.prepare(m)
+				got, err := m.Mask(tt.input)
+				if tt.isErr {
+					if err == nil {
+						t.Error("want an error to occur")
+					}
+					return
+				} else if err != nil {
+					t.Fatal(err)
+				}
+
+				if diff := cmp.Diff(tt.want, got); diff != "" {
 					t.Error(diff)
 				}
 			})
@@ -895,277 +1291,109 @@ func TestMask_SameAnonynousStruct(t *testing.T) {
 	})
 }
 
-func TestString(t *testing.T) {
-	tests := map[string]struct {
-		tag   string
-		input string
-		want  string
-	}{
-		"no tag": {
-			tag:   "",
-			input: "ヤハッ！",
-			want:  "ヤハッ！",
-		},
-		"undefined tag": {
-			tag:   "usagi!!",
-			input: "ヤハッ！",
-			want:  "ヤハッ！",
-		},
-		"filled": {
-			tag:   MaskTypeFilled,
-			input: "ヤハッ！",
-			want:  "****",
-		},
-		"zero": {
-			tag:   MaskTypeZero,
-			input: "ヤハッ！",
-			want:  "",
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(defaultTestCase(name), func(t *testing.T) {
-			defer cleanup(t)
-			got, err := String(tt.tag, tt.input)
-			assert.Nil(t, err)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Error(diff)
-			}
-		})
-		t.Run(newMaskerTestCase(name), func(t *testing.T) {
-			m := newMasker()
-			got, err := m.String(tt.tag, tt.input)
-			assert.Nil(t, err)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Error(diff)
-			}
-		})
-	}
+func registerTestMaskFunc(m *Masker, tag string) {
+	m.RegisterMaskStringFunc(tag, func(arg, value string) (string, error) {
+		return "test", nil
+	})
+	m.RegisterMaskIntFunc(tag, func(arg string, value int) (int, error) {
+		return math.MaxInt, nil
+	})
+	m.RegisterMaskUintFunc(tag, func(arg string, value uint) (uint, error) {
+		return math.MaxUint, nil
+	})
+	m.RegisterMaskFloat64Func(tag, func(arg string, value float64) (float64, error) {
+		return math.MaxFloat64, nil
+	})
 }
 
-func TestInt(t *testing.T) {
-	tests := map[string]struct {
-		tag     string
-		input   int
-		want    int
-		wantErr bool
-	}{
-		"no tag": {
-			tag:   "",
-			input: 20190122,
-			want:  20190122,
-		},
-		"undefined tag": {
-			tag:   "usagi!!",
-			input: 20190122,
-			want:  20190122,
-		},
-		"randomXX": {
-			tag:     MaskTypeRandom + "XX",
-			input:   20190122,
-			wantErr: true,
-		},
-		"random30": {
-			tag:   MaskTypeRandom + "30",
-			input: 20190122,
-			want:  9,
-		},
-		"random1000": {
-			tag:   MaskTypeRandom + "1000",
-			input: 20190122,
-			want:  829,
-		},
-		"zero": {
-			tag:   "zero",
-			input: 0,
-			want:  0,
-		},
-	}
+func TestSetTagName(t *testing.T) {
+	t.Run("change a tag name", func(t *testing.T) {
+		m := newMasker()
+		m.SetTagName("fake")
 
-	for name, tt := range tests {
-		t.Run(defaultTestCase(name), func(t *testing.T) {
-			rand.Seed(rand.NewSource(1).Int63())
-			defer cleanup(t)
-			got, err := Int(tt.tag, tt.input)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.Nil(t, err)
-				if diff := cmp.Diff(tt.want, got); diff != "" {
-					t.Error(diff)
-				}
-			}
-		})
-		t.Run(newMaskerTestCase(name), func(t *testing.T) {
-			rand.Seed(rand.NewSource(1).Int63())
-			m := newMasker()
-			got, err := m.Int(tt.tag, tt.input)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.Nil(t, err)
-				if diff := cmp.Diff(tt.want, got); diff != "" {
-					t.Error(diff)
-				}
-			}
-		})
-	}
+		input := struct {
+			SM string `mask:"filled4"`
+			SF string `fake:"filled4"`
+		}{
+			SM: "Hello World",
+			SF: "Hello World",
+		}
+		want := struct {
+			SM string `mask:"filled4"`
+			SF string `fake:"filled4"`
+		}{
+			SM: "Hello World",
+			SF: "****",
+		}
+		got, _ := m.Mask(input)
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Error(diff)
+		}
+	})
+	t.Run("change a empty tag name", func(t *testing.T) {
+		m := newMasker()
+		m.SetTagName("")
+
+		input := struct {
+			SM string `mask:"filled4"`
+			SF string `fake:"filled4"`
+		}{
+			SM: "Hello World",
+			SF: "Hello World",
+		}
+		want := struct {
+			SM string `mask:"filled4"`
+			SF string `fake:"filled4"`
+		}{
+			SM: "****",
+			SF: "Hello World",
+		}
+		got, _ := m.Mask(input)
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Error(diff)
+		}
+	})
 }
 
-func TestUint(t *testing.T) {
-	tests := map[string]struct {
-		tag     string
-		input   uint
-		want    uint
-		wantErr bool
-	}{
-		"no tag": {
-			tag:   "",
-			input: 20190122,
-			want:  20190122,
-		},
-		"undefined tag": {
-			tag:   "usagi!!",
-			input: 20190122,
-			want:  20190122,
-		},
-		"randomXX": {
-			tag:     "urandomXX",
-			input:   20190122,
-			wantErr: true,
-		},
-		"random30": {
-			tag:   "urandom30",
-			input: 20190122,
-			want:  9,
-		},
-		"random1000": {
-			tag:   "urandom1000",
-			input: 20190122,
-			want:  829,
-		},
-		"zero": {
-			tag:   "zero",
-			input: 0,
-			want:  0,
-		},
-	}
+func TestSetMaskChar(t *testing.T) {
+	t.Run("change a mask character", func(t *testing.T) {
+		defer cleanup(t)
+		SetMaskChar("-")
 
-	for name, tt := range tests {
-		t.Run(defaultTestCase(name), func(t *testing.T) {
-			rand.Seed(rand.NewSource(1).Int63())
-			defer cleanup(t)
-			RegisterMaskUintFunc("urandom", func(arg string, value uint) (uint, error) {
-				ret, err := defaultMasker.MaskRandomInt(arg, int(value))
-				return uint(ret), err
-			})
-			got, err := Uint(tt.tag, tt.input)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.Nil(t, err)
-				if diff := cmp.Diff(tt.want, got); diff != "" {
-					t.Error(diff)
-				}
-			}
-		})
-		t.Run(newMaskerTestCase(name), func(t *testing.T) {
-			rand.Seed(rand.NewSource(1).Int63())
-			m := newMasker()
-			m.RegisterMaskUintFunc("urandom", func(arg string, value uint) (uint, error) {
-				ret, err := defaultMasker.MaskRandomInt(arg, int(value))
-				return uint(ret), err
-			})
-			got, err := m.Uint(tt.tag, tt.input)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.Nil(t, err)
-				if diff := cmp.Diff(tt.want, got); diff != "" {
-					t.Error(diff)
-				}
-			}
-		})
-	}
-}
+		input := struct {
+			S string `mask:"filled4"`
+		}{
+			S: "Hello World",
+		}
+		want := struct {
+			S string `mask:"filled4"`
+		}{
+			S: "----",
+		}
+		got, _ := Mask(input)
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Error(diff)
+		}
+	})
+	t.Run("change a empty mask character", func(t *testing.T) {
+		defer cleanup(t)
+		SetMaskChar("")
 
-func TestFloat64(t *testing.T) {
-	tests := map[string]struct {
-		tag     string
-		input   float64
-		want    float64
-		wantErr bool
-	}{
-		"no tag": {
-			tag:   "",
-			input: 20190122,
-			want:  20190122,
-		},
-		"undefined tag": {
-			tag:   "usagi!!",
-			input: 20190122,
-			want:  20190122,
-		},
-		"randomXX.4": {
-			tag:     MaskTypeRandom + "XX.4",
-			input:   20190122,
-			wantErr: true,
-		},
-		"random4.XX": {
-			tag:     MaskTypeRandom + "10000.XX",
-			input:   20190122,
-			wantErr: true,
-		},
-		"random5.4": {
-			tag:   MaskTypeRandom + "100000.4",
-			input: 20190122,
-			want:  96011.8989,
-		},
-		"random1.1": {
-			tag:   MaskTypeRandom + "10.1",
-			input: 20190122,
-			want:  9.6,
-		},
-		"random1": {
-			tag:   MaskTypeRandom + "10",
-			input: 20190122,
-			want:  9.0,
-		},
-		"zero": {
-			tag:   "zero",
-			input: 20190122,
-			want:  0,
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(defaultTestCase(name), func(t *testing.T) {
-			rand.Seed(rand.NewSource(1).Int63())
-			defer cleanup(t)
-			got, err := Float64(tt.tag, tt.input)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.Nil(t, err)
-				if diff := cmp.Diff(tt.want, got); diff != "" {
-					t.Error(diff)
-				}
-			}
-		})
-		t.Run(newMaskerTestCase(name), func(t *testing.T) {
-			rand.Seed(rand.NewSource(1).Int63())
-			m := newMasker()
-			got, err := m.Float64(tt.tag, tt.input)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.Nil(t, err)
-				if diff := cmp.Diff(tt.want, got); diff != "" {
-					t.Error(diff)
-				}
-			}
-		})
-	}
+		input := struct {
+			S string `mask:"filled4"`
+		}{
+			S: "Hello World",
+		}
+		want := struct {
+			S string `mask:"filled4"`
+		}{
+			S: "",
+		}
+		got, _ := Mask(input)
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Error(diff)
+		}
+	})
 }
 
 func TestMaskFilled(t *testing.T) {
@@ -1226,8 +1454,8 @@ func TestMaskFilled(t *testing.T) {
 			want:  &stringSliceTest{Usagi: ([]string)(nil)},
 		},
 		"string slice ptr fields": {
-			input: &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"})},
-			want:  &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"***", "**", "***"})},
+			input: &stringSlicePtrTest{Usagi: &([]string{"ハァ？", "ウラ", "フゥン"})},
+			want:  &stringSlicePtrTest{Usagi: &([]string{"***", "**", "***"})},
 		},
 		"nil string slice ptr fields": {
 			input: &stringSlicePtrTest{},
@@ -1381,8 +1609,8 @@ func TestMaskHashString(t *testing.T) {
 			want:  &stringSliceTest{Usagi: ([]string)(nil)},
 		},
 		"string slice ptr fields": {
-			input: &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"})},
-			want: &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{
+			input: &stringSlicePtrTest{Usagi: &([]string{"ハァ？", "ウラ", "フゥン"})},
+			want: &stringSlicePtrTest{Usagi: &([]string{
 				"48a8b33f36a35631f584844686adaba89a6f156a",
 				"ecef3e43f07f7150c089e99d5e1041259b1189d5",
 				"17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
@@ -1572,8 +1800,8 @@ func TestMaskRandom(t *testing.T) {
 			want:  &intSliceTest{Usagi: ([]int)(nil)},
 		},
 		"int slice ptr fields": {
-			input: &intSlicePtrTest{Usagi: convertIntSlicePtr([]int{20190122, 20200501, 20200501})},
-			want:  &intSlicePtrTest{Usagi: convertIntSlicePtr([]int{829, 830, 400})},
+			input: &intSlicePtrTest{Usagi: &([]int{20190122, 20200501, 20200501})},
+			want:  &intSlicePtrTest{Usagi: &([]int{829, 830, 400})},
 		},
 		"nil int slice ptr fields": {
 			input: &intSlicePtrTest{},
@@ -1620,8 +1848,8 @@ func TestMaskRandom(t *testing.T) {
 			want:  &float64SliceTest{Usagi: ([]float64)(nil)},
 		},
 		"float64 slice ptr fields": {
-			input: &float64SlicePtrTest{Usagi: convertFloat64SlicePtr([]float64{20190122, 20200501, 20200501})},
-			want:  &float64SlicePtrTest{Usagi: convertFloat64SlicePtr([]float64{96011.8989, 90863.3149, 32310.0201})},
+			input: &float64SlicePtrTest{Usagi: &([]float64{20190122, 20200501, 20200501})},
+			want:  &float64SlicePtrTest{Usagi: &([]float64{96011.8989, 90863.3149, 32310.0201})},
 		},
 		"nil float64 slice ptr fields": {
 			input: &float64SlicePtrTest{},
@@ -1733,7 +1961,7 @@ func TestMaskZero(t *testing.T) {
 			want:  &stringSliceTest{Usagi: ([]string)(nil)},
 		},
 		"string slice ptr fields": {
-			input: &stringSlicePtrTest{Usagi: convertStringSlicePtr([]string{"ハァ？", "ウラ", "フゥン"})},
+			input: &stringSlicePtrTest{Usagi: &([]string{"ハァ？", "ウラ", "フゥン"})},
 			want:  &stringSlicePtrTest{},
 		},
 		"nil string slice ptr fields": {
@@ -1813,252 +2041,6 @@ func TestMaskZero(t *testing.T) {
 	}
 }
 
-func TestMaskFieldName(t *testing.T) {
-	tests := map[string]struct {
-		before func(m *Masker)
-		input  any
-		want   any
-	}{
-		"matches field of string type": {
-			before: func(m *Masker) {
-				m.RegisterMaskField("S", MaskTypeFilled+"4")
-			},
-			input: struct {
-				S string
-			}{
-				S: "Hello World",
-			},
-			want: struct {
-				S string
-			}{
-				S: "****",
-			},
-		},
-		"matches field of int type": {
-			before: func(m *Masker) {
-				rand.Seed(rand.NewSource(1).Int63())
-				m.RegisterMaskField("I", MaskTypeRandom+"100")
-			},
-			input: struct {
-				I int
-			}{
-				I: 10,
-			},
-			want: struct {
-				I int
-			}{
-				I: 29,
-			},
-		},
-		"matches field of float64 type": {
-			before: func(m *Masker) {
-				rand.Seed(rand.NewSource(1).Int63())
-				m.RegisterMaskField("F", MaskTypeRandom+"100.3")
-			},
-			input: struct {
-				F float64
-			}{
-				F: 10,
-			},
-			want: struct {
-				F float64
-			}{
-				F: 96.011,
-			},
-		},
-		"matches field of any type": {
-			before: func(m *Masker) {
-				rand.Seed(rand.NewSource(1).Int63())
-				m.RegisterMaskField("S", MaskTypeZero)
-				m.RegisterMaskField("I", MaskTypeZero)
-				m.RegisterMaskField("F", MaskTypeZero)
-				m.RegisterMaskField("A", MaskTypeZero)
-			},
-			input: struct {
-				S string
-				I int
-				F float64
-				A any
-			}{
-				S: "String",
-				I: 10,
-				F: 10.2,
-				A: struct{ SS string }{"Child"},
-			},
-			want: struct {
-				S string
-				I int
-				F float64
-				A any
-			}{
-				S: "",
-				I: 0,
-				F: 0,
-				A: struct{ SS string }{},
-			},
-		},
-		"matches field of map type": {
-			before: func(m *Masker) {
-				rand.Seed(rand.NewSource(1).Int63())
-				m.RegisterMaskField("S", MaskTypeFilled+"4")
-				m.RegisterMaskField("I", MaskTypeRandom+"100")
-			},
-			input: map[string]any{
-				"M": map[string]any{
-					"S": "Hello world",
-					"I": 10,
-				},
-			},
-			want: map[string]any{
-				"M": map[string]any{
-					"S": "****",
-					"I": 29,
-				},
-			},
-		},
-		"matches field of json": {
-			before: func(m *Masker) {
-				rand.Seed(rand.NewSource(1).Int63())
-				m.RegisterMaskField("S", MaskTypeFilled+"4")
-				m.RegisterMaskField("F", MaskTypeRandom+"100")
-			},
-			input: unmarshalJson(t, `{"M":{"S": "Hello World","F":10}}`),
-			want: map[string]any{
-				"M": map[string]any{
-					"S": "****",
-					"F": 96.0,
-				},
-			},
-		},
-		"no type match with registered tags": {
-			before: func(m *Masker) {
-				m.RegisterMaskField("S", MaskTypeRandom+"100") // random tag is only int or float
-			},
-			input: struct {
-				S string
-			}{
-				S: "Hello World",
-			},
-			want: struct {
-				S string
-			}{
-				S: "Hello World",
-			},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(defaultTestCase(name), func(t *testing.T) {
-			defer cleanup(t)
-			tt.before(defaultMasker)
-			got, err := Mask(tt.input)
-			assert.Nil(t, err)
-			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
-				t.Error(diff)
-			}
-		})
-
-		t.Run(newMaskerTestCase(name), func(t *testing.T) {
-			m := newMasker()
-			tt.before(m)
-			got, err := m.Mask(tt.input)
-			assert.Nil(t, err)
-			if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
-				t.Error(diff)
-			}
-		})
-	}
-}
-
-func TestSetTagName(t *testing.T) {
-	t.Run("change a tag name", func(t *testing.T) {
-		m := newMasker()
-		m.SetTagName("fake")
-
-		input := struct {
-			SM string `mask:"filled4"`
-			SF string `fake:"filled4"`
-		}{
-			SM: "Hello World",
-			SF: "Hello World",
-		}
-		want := struct {
-			SM string `mask:"filled4"`
-			SF string `fake:"filled4"`
-		}{
-			SM: "Hello World",
-			SF: "****",
-		}
-		got, _ := m.Mask(input)
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Error(diff)
-		}
-	})
-	t.Run("change a empty tag name", func(t *testing.T) {
-		m := newMasker()
-		m.SetTagName("")
-
-		input := struct {
-			SM string `mask:"filled4"`
-			SF string `fake:"filled4"`
-		}{
-			SM: "Hello World",
-			SF: "Hello World",
-		}
-		want := struct {
-			SM string `mask:"filled4"`
-			SF string `fake:"filled4"`
-		}{
-			SM: "****",
-			SF: "Hello World",
-		}
-		got, _ := m.Mask(input)
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Error(diff)
-		}
-	})
-}
-
-func TestSetMaskChar(t *testing.T) {
-	t.Run("change a mask character", func(t *testing.T) {
-		defer cleanup(t)
-		SetMaskChar("-")
-
-		input := struct {
-			S string `mask:"filled4"`
-		}{
-			S: "Hello World",
-		}
-		want := struct {
-			S string `mask:"filled4"`
-		}{
-			S: "----",
-		}
-		got, _ := Mask(input)
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Error(diff)
-		}
-	})
-	t.Run("change a empty mask character", func(t *testing.T) {
-		defer cleanup(t)
-		SetMaskChar("")
-
-		input := struct {
-			S string `mask:"filled4"`
-		}{
-			S: "Hello World",
-		}
-		want := struct {
-			S string `mask:"filled4"`
-		}{
-			S: "",
-		}
-		got, _ := Mask(input)
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Error(diff)
-		}
-	})
-}
-
 func allowUnexported(v any) cmp.Options {
 	var options cmp.Options
 	if !reflect.ValueOf(v).IsValid() {
@@ -2095,48 +2077,26 @@ func getStructType(rt reflect.Type) (reflect.Type, bool) {
 func convertStringPtr(s string) *string {
 	return &s
 }
-func convertStringSlicePtr(s []string) *[]string {
-	return &s
-}
-func convertInt16Ptr(i int16) *int16 {
-	return &i
-}
-func convertInt32Ptr(i int32) *int32 {
-	return &i
-}
-func convertInt64Ptr(i int64) *int64 {
-	return &i
-}
 func convertIntPtr(i int) *int {
 	return &i
 }
-func convertIntSlicePtr(i []int) *[]int {
+func convertUintPtr(i uint) *uint {
 	return &i
 }
-func convertFloat32Ptr(f float32) *float32 {
-	return &f
+func convertBytePtr(v byte) *byte {
+	return &v
 }
 func convertFloat64Ptr(f float64) *float64 {
 	return &f
 }
-func convertFloat64SlicePtr(f []float64) *[]float64 {
-	return &f
+func convertComplex128Ptr(c complex128) *complex128 {
+	return &c
 }
 func convertBoolPtr(v bool) *bool {
 	return &v
 }
 func convertAnyPtr(v any) *any {
 	return &v
-}
-
-func unmarshalJson(t *testing.T, s string) any {
-	t.Helper()
-	var ret any
-	if err := json.Unmarshal([]byte(s), &ret); err != nil {
-		t.Fatal(err)
-	}
-
-	return ret
 }
 
 func defaultTestCase(name string) string {

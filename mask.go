@@ -453,7 +453,12 @@ func (m *Masker) mask(rv reflect.Value, tag string, mp reflect.Value) (reflect.V
 		return m.maskPtr(rv, tag, mp)
 	case reflect.Struct:
 		return m.maskStruct(rv, tag, mp)
-	case reflect.Slice, reflect.Array:
+	case reflect.Array:
+		return m.maskSlice(rv, tag, mp)
+	case reflect.Slice:
+		if rv.IsNil() {
+			return reflect.Zero(rv.Type()), nil
+		}
 		return m.maskSlice(rv, tag, mp)
 	case reflect.Map:
 		return m.maskMap(rv, tag, mp)
@@ -567,10 +572,6 @@ func (m *Masker) maskStruct(rv reflect.Value, tag string, mp reflect.Value) (ref
 }
 
 func (m *Masker) maskSlice(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {
-	if rv.IsZero() {
-		return reflect.Zero(rv.Type()), nil
-	}
-
 	var rv2 reflect.Value
 
 	if rt := rv.Type(); rt.Kind() == reflect.Array {

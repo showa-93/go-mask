@@ -236,6 +236,24 @@ func TestMask(t *testing.T) {
 				Float64 float64 `mask:"test"`
 			}{math.MaxFloat64},
 		},
+		"struct with private field": {
+			prepare: func(m *Masker) {
+				RegisterMaskFloat64Func("test", func(arg string, value float64) (float64, error) {
+					return math.MaxFloat64, nil
+				})
+			},
+			input: struct {
+				Float64 float64 `mask:"test"`
+				private string  `mask:"test"`
+			}{
+				Float64: 1234.5678,
+				private: "x",
+			},
+			want: struct {
+				Float64 float64 `mask:"test"`
+				private string  `mask:"test"`
+			}{Float64: math.MaxFloat64},
+		},
 	}
 
 	for name, tt := range tests {
@@ -254,7 +272,7 @@ func TestMask(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				if diff := cmp.Diff(tt.want, got); diff != "" {
+				if diff := cmp.Diff(tt.want, got, allowUnexported(tt.input)); diff != "" {
 					t.Error(diff)
 				}
 			})
@@ -593,6 +611,7 @@ func TestMask_Slice(t *testing.T) {
 		Complex128 []complex128 `mask:"test"`
 		Byte       []byte       `mask:"test"`
 		Struct     []Struct1    `mask:"test"`
+		ZeroGuard  string
 	}
 	type NoTag struct {
 		String     []string
@@ -602,6 +621,7 @@ func TestMask_Slice(t *testing.T) {
 		Complex128 []complex128
 		Byte       []byte
 		Struct     []Struct2
+		ZeroGuard  string
 	}
 	type Test struct {
 		Tag
@@ -635,8 +655,65 @@ func TestMask_Slice(t *testing.T) {
 	}{
 		"nil": {
 			prepare: func(m *Masker) {},
-			input:   Test{},
-			want:    Test{},
+			input: Test{
+				Tag: Tag{
+					ZeroGuard: "x",
+				},
+				NoTag: NoTag{
+					ZeroGuard: "x",
+				},
+			},
+			want: Test{
+				Tag: Tag{
+					ZeroGuard: "x",
+				},
+				NoTag: NoTag{
+					ZeroGuard: "x",
+				},
+			},
+		},
+		"empty slice": {
+			prepare: func(m *Masker) {},
+			input: Test{
+				Tag: Tag{
+					String:     []string{},
+					Int:        []int{},
+					Uint:       []uint{},
+					Float64:    []float64{},
+					Complex128: []complex128{},
+					Byte:       []byte{},
+					Struct:     []Struct1{},
+				},
+				NoTag: NoTag{
+					String:     []string{},
+					Int:        []int{},
+					Uint:       []uint{},
+					Float64:    []float64{},
+					Complex128: []complex128{},
+					Byte:       []byte{},
+					Struct:     []Struct2{},
+				},
+			},
+			want: Test{
+				Tag: Tag{
+					String:     []string{},
+					Int:        []int{},
+					Uint:       []uint{},
+					Float64:    []float64{},
+					Complex128: []complex128{},
+					Byte:       []byte{},
+					Struct:     []Struct1{},
+				},
+				NoTag: NoTag{
+					String:     []string{},
+					Int:        []int{},
+					Uint:       []uint{},
+					Float64:    []float64{},
+					Complex128: []complex128{},
+					Byte:       []byte{},
+					Struct:     []Struct2{},
+				},
+			},
 		},
 		"no masking functions": {
 			prepare: func(m *Masker) {},
@@ -729,22 +806,26 @@ func TestMask_Map(t *testing.T) {
 		String     map[string]string     `mask:"test"`
 		Int        map[string]int        `mask:"test"`
 		Uint       map[string]uint       `mask:"test"`
+		Float32    map[string]float32    `mask:"test"`
 		Float64    map[string]float64    `mask:"test"`
 		Complex128 map[string]complex128 `mask:"test"`
 		Byte       map[string]byte       `mask:"test"`
 		IntKey     map[int]string        `mask:"test"`
 		StructKey  map[Key]string        `mask:"test"`
+		ZeroGuard  string
 	}
 	type NoTag struct {
 		String     map[string]string
 		Int        map[string]int
 		Uint       map[string]uint
+		Float32    map[string]float32
 		Float64    map[string]float64
 		Complex128 map[string]complex128
 		Byte       map[string]byte
 		StringKey  map[string]string
 		IntKey     map[int]string
 		StructKey  map[Key]string
+		ZeroGuard  string
 	}
 	type Test struct {
 		Tag
@@ -756,6 +837,7 @@ func TestMask_Map(t *testing.T) {
 			String:     map[string]string{"猿将": "大関", "猿谷": "小結", "猿桜": "三枚目"},
 			Int:        map[string]int{"猿将": -1, "猿谷": 10, "猿桜": 100},
 			Uint:       map[string]uint{"猿将": 1, "猿谷": 2, "猿桜": 3},
+			Float32:    map[string]float32{"猿将": 1.1, "猿谷": 1000.123, "猿桜": 999.0},
 			Float64:    map[string]float64{"猿将": 1.1, "猿谷": 1000.123, "猿桜": 999.0},
 			Complex128: map[string]complex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
 			Byte:       map[string]byte{"猿将": 1, "猿谷": 2, "猿桜": 3},
@@ -766,6 +848,7 @@ func TestMask_Map(t *testing.T) {
 			String:     map[string]string{"猿将": "大関", "猿谷": "小結", "猿桜": "三枚目"},
 			Int:        map[string]int{"猿将": -1, "猿谷": 10, "猿桜": 100},
 			Uint:       map[string]uint{"猿将": 1, "猿谷": 2, "猿桜": 3},
+			Float32:    map[string]float32{"猿将": 1.1, "猿谷": 1000.123, "猿桜": 999.0},
 			Float64:    map[string]float64{"猿将": 1.1, "猿谷": 1000.123, "猿桜": 999.0},
 			Complex128: map[string]complex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
 			Byte:       map[string]byte{"猿将": 1, "猿谷": 2, "猿桜": 3},
@@ -776,22 +859,37 @@ func TestMask_Map(t *testing.T) {
 	}
 	tests := map[string]struct {
 		prepare func(*Masker)
+		input   Test
 		want    Test
 		isErr   bool
 	}{
+		"nil": {
+			prepare: func(*Masker) {},
+			input: Test{
+				Tag:   Tag{ZeroGuard: "x"},
+				NoTag: NoTag{ZeroGuard: "x"},
+			},
+			want: Test{
+				Tag:   Tag{ZeroGuard: "x"},
+				NoTag: NoTag{ZeroGuard: "x"},
+			},
+		},
 		"no masking functions": {
 			prepare: func(m *Masker) {},
+			input:   input,
 			want:    input,
 		},
 		"register masking functions": {
 			prepare: func(m *Masker) {
 				registerTestMaskFunc(m, "test")
 			},
+			input: input,
 			want: Test{
 				Tag: Tag{
 					String:     map[string]string{"猿将": "test", "猿谷": "test", "猿桜": "test"},
 					Int:        map[string]int{"猿将": math.MaxInt, "猿谷": math.MaxInt, "猿桜": math.MaxInt},
 					Uint:       map[string]uint{"猿将": math.MaxUint, "猿谷": math.MaxUint, "猿桜": math.MaxUint},
+					Float32:    map[string]float32{"猿将": float32(math.Inf(0)), "猿谷": float32(math.Inf(0)), "猿桜": float32(math.Inf(0))},
 					Float64:    map[string]float64{"猿将": math.MaxFloat64, "猿谷": math.MaxFloat64, "猿桜": math.MaxFloat64},
 					Complex128: map[string]complex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
 					Byte:       map[string]byte{"猿将": 255, "猿谷": 255, "猿桜": 255},
@@ -825,12 +923,14 @@ func TestMask_Map(t *testing.T) {
 				// map key
 				m.RegisterMaskField("猿将", "field")
 			},
+			input: input,
 			want: Test{
 				Tag: input.Tag,
 				NoTag: NoTag{
 					String:     map[string]string{"猿将": "test", "猿谷": "test", "猿桜": "test"},
 					Int:        map[string]int{"猿将": math.MaxInt, "猿谷": math.MaxInt, "猿桜": math.MaxInt},
 					Uint:       map[string]uint{"猿将": math.MaxUint, "猿谷": math.MaxUint, "猿桜": math.MaxUint},
+					Float32:    map[string]float32{"猿将": float32(math.Inf(0)), "猿谷": float32(math.Inf(0)), "猿桜": float32(math.Inf(0))},
 					Float64:    map[string]float64{"猿将": math.MaxFloat64, "猿谷": math.MaxFloat64, "猿桜": math.MaxFloat64},
 					Complex128: map[string]complex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
 					Byte:       map[string]byte{"猿将": 255, "猿谷": 255, "猿桜": 255},
@@ -847,7 +947,7 @@ func TestMask_Map(t *testing.T) {
 			t.Run(fmt.Sprintf("%s - cache enable=%t", name, cache), func(t *testing.T) {
 				m := NewMasker()
 				tt.prepare(m)
-				got, err := m.Mask(input)
+				got, err := m.Mask(tt.input)
 				if tt.isErr {
 					if err == nil {
 						t.Error("want an error to occur")
@@ -883,6 +983,7 @@ func TestMask_Pointer(t *testing.T) {
 		Slice      *[]string          `mask:"test"`
 		Map        *map[string]string `mask:"test"`
 		Struct     *Struct1
+		ZeroGuard  string
 	}
 	type NoTag struct {
 		String     *string
@@ -895,6 +996,7 @@ func TestMask_Pointer(t *testing.T) {
 		Slice      *[]string
 		Map        *map[string]string
 		Struct     *Struct2
+		ZeroGuard  string
 	}
 	type Test struct {
 		Tag
@@ -935,8 +1037,14 @@ func TestMask_Pointer(t *testing.T) {
 	}{
 		"nil": {
 			prepare: func(m *Masker) {},
-			input:   Test{},
-			want:    Test{},
+			input: Test{
+				Tag:   Tag{ZeroGuard: "x"},
+				NoTag: NoTag{ZeroGuard: "x"},
+			},
+			want: Test{
+				Tag:   Tag{ZeroGuard: "x"},
+				NoTag: NoTag{ZeroGuard: "x"},
+			},
 		},
 		"no masking functions": {
 			prepare: func(m *Masker) {},
@@ -1038,6 +1146,7 @@ func TestMask_Interface(t *testing.T) {
 		Map        TestAny `mask:"test"`
 		Struct     TestAny
 		Pointer    TestAny
+		ZeroGuard  string
 	}
 	type NoTag struct {
 		String     TestAny
@@ -1051,6 +1160,7 @@ func TestMask_Interface(t *testing.T) {
 		Map        TestAny
 		Struct     TestAny
 		Pointer    TestAny
+		ZeroGuard  string
 	}
 	type Test struct {
 		Tag
@@ -1093,8 +1203,14 @@ func TestMask_Interface(t *testing.T) {
 	}{
 		"nil": {
 			prepare: func(m *Masker) {},
-			input:   Test{},
-			want:    Test{},
+			input: Test{
+				Tag:   Tag{ZeroGuard: "x"},
+				NoTag: NoTag{ZeroGuard: "x"},
+			},
+			want: Test{
+				Tag:   Tag{ZeroGuard: "x"},
+				NoTag: NoTag{ZeroGuard: "x"},
+			},
 		},
 		"no masking functions": {
 			prepare: func(m *Masker) {},
@@ -2039,6 +2155,69 @@ func TestMaskZero(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAnyMaskFunc(t *testing.T) {
+	t.Run("String", func(t *testing.T) {
+		m := newMasker()
+		m.RegisterMaskAnyFunc("test", func(arg string, value any) (any, error) {
+			return "白鳳", nil
+		})
+
+		got, err := m.String("test", "朝青龍")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if diff := cmp.Diff("白鳳", got); diff != "" {
+			t.Error(diff)
+		}
+	})
+	t.Run("Int", func(t *testing.T) {
+		m := newMasker()
+		m.RegisterMaskAnyFunc("test", func(arg string, value any) (any, error) {
+			return 33, nil
+		})
+
+		got, err := m.Int("test", 11)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if diff := cmp.Diff(33, got); diff != "" {
+			t.Error(diff)
+		}
+	})
+	t.Run("Uint", func(t *testing.T) {
+		m := newMasker()
+		m.RegisterMaskAnyFunc("test", func(arg string, value any) (any, error) {
+			return uint(44), nil
+		})
+
+		got, err := m.Uint("test", 11)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if diff := cmp.Diff(uint(44), got); diff != "" {
+			t.Error(diff)
+		}
+	})
+	t.Run("Float64", func(t *testing.T) {
+		m := newMasker()
+		m.RegisterMaskAnyFunc("test", func(arg string, value any) (any, error) {
+			return 123.45, nil
+		})
+
+		got, err := m.Float64("test", 12.3)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if diff := cmp.Diff(123.45, got); diff != "" {
+			t.Error(diff)
+		}
+	})
 }
 
 func allowUnexported(v any) cmp.Options {

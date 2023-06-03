@@ -206,6 +206,7 @@ func (m *Masker) SetMaskChar(s string) {
 }
 
 // Cache can be toggled to cache the type information of the struct.
+// default true
 func (m *Masker) Cache(enable bool) {
 	m.cache = enable
 }
@@ -541,6 +542,7 @@ func (m *Masker) maskStruct(rv reflect.Value, tag string, mp reflect.Value) (ref
 		} else {
 			field = rt.Field(i)
 		}
+		// skip private field
 		if field.PkgPath != "" {
 			continue
 		}

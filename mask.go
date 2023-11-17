@@ -151,7 +151,7 @@ type Masker struct {
 	mu                sync.RWMutex
 	tagName           string
 	maskChar          string
-	typeToStructCache map[string]structType
+	typeToStructCache map[reflect.Type]structType
 
 	maskFieldMap map[string]string
 
@@ -174,7 +174,7 @@ func NewMasker() *Masker {
 		maskChar: maskChar,
 
 		cache:             true,
-		typeToStructCache: make(map[string]structType),
+		typeToStructCache: make(map[reflect.Type]structType),
 
 		maskFieldMap: make(map[string]string),
 
@@ -518,9 +518,8 @@ func (m *Masker) maskStruct(rv reflect.Value, tag string, mp reflect.Value) (ref
 	var st structType
 	if m.cache {
 		m.mu.RLock()
-		key := rt.String()
 		var ok bool
-		st, ok = m.typeToStructCache[key]
+		st, ok = m.typeToStructCache[rt]
 		m.mu.RUnlock()
 		if !ok {
 			m.mu.Lock()
@@ -528,7 +527,7 @@ func (m *Masker) maskStruct(rv reflect.Value, tag string, mp reflect.Value) (ref
 			for i := 0; i < rt.NumField(); i++ {
 				st.structFields = append(st.structFields, rt.Field(i))
 			}
-			m.typeToStructCache[key] = st
+			m.typeToStructCache[rt] = st
 			m.mu.Unlock()
 		}
 		if !mp.IsValid() {

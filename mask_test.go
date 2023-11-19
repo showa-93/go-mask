@@ -1295,9 +1295,6 @@ func TestMask_Interface(t *testing.T) {
 }
 
 func TestMask_SameStruct(t *testing.T) {
-	// Caching the struct type in sync.Map.
-	// If there are different fields with the same struct name in the same package, it will result in an error.
-	t.Skip()
 	type sameStructNameTest struct {
 		Usagi string
 	}

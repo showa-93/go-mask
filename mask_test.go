@@ -2287,7 +2287,7 @@ func newMaskerTestCase(name string) string {
 
 func cleanup(t *testing.T) {
 	t.Helper()
-	defaultMasker.typeToStructCache = make(map[string]structType)
+	defaultMasker.typeToStructCache = make(map[reflect.Type]structType)
 	SetMaskChar(maskChar)
 }
 

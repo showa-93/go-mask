@@ -469,23 +469,31 @@ func TestMask_Array(t *testing.T) {
 	type Struct2 struct {
 		String string
 	}
+	type CustomArrayOfStruct [3]Struct1
+	type CustomArrayOfStruct2 [3]Struct2
+	type CustomArrayOfByte [3]byte
+
 	type Tag struct {
-		String     [3]string     `mask:"test"`
-		Int        [3]int        `mask:"test"`
-		Uint       [3]uint       `mask:"test"`
-		Float64    [3]float64    `mask:"test"`
-		Complex128 [3]complex128 `mask:"test"`
-		Byte       [3]byte       `mask:"test"`
-		Struct     [3]Struct1    `mask:"test"`
+		String         [3]string           `mask:"test"`
+		Int            [3]int              `mask:"test"`
+		Uint           [3]uint             `mask:"test"`
+		Float64        [3]float64          `mask:"test"`
+		Complex128     [3]complex128       `mask:"test"`
+		Byte           [3]byte             `mask:"test"`
+		CustomOfByte   CustomArrayOfByte   `mask:"test"`
+		Struct         [3]Struct1          `mask:"test"`
+		CustomOfStruct CustomArrayOfStruct `mask:"test"`
 	}
 	type NoTag struct {
-		String     [3]string
-		Int        [3]int
-		Uint       [3]uint
-		Float64    [3]float64
-		Complex128 [3]complex128
-		Byte       [3]byte
-		Struct     [3]Struct2
+		String         [3]string
+		Int            [3]int
+		Uint           [3]uint
+		Float64        [3]float64
+		Complex128     [3]complex128
+		Byte           [3]byte
+		CustomOfByte   CustomArrayOfByte
+		Struct         [3]Struct2
+		CustomOfStruct CustomArrayOfStruct2
 	}
 	type Test struct {
 		Tag
@@ -493,22 +501,26 @@ func TestMask_Array(t *testing.T) {
 	}
 	input := Test{
 		Tag: Tag{
-			String:     [3]string{"猿将", "猿谷", "猿桜"},
-			Int:        [3]int{-1, 10, 100},
-			Uint:       [3]uint{1, 2, 3},
-			Float64:    [3]float64{1.1, 1000.123, 999.0},
-			Complex128: [3]complex128{100 + 1i, 10i, 10},
-			Byte:       [3]byte{1, 2, 3},
-			Struct:     [3]Struct1{{"猿空"}, {"猿岳"}, {"猿河"}},
+			String:         [3]string{"猿将", "猿谷", "猿桜"},
+			Int:            [3]int{-1, 10, 100},
+			Uint:           [3]uint{1, 2, 3},
+			Float64:        [3]float64{1.1, 1000.123, 999.0},
+			Complex128:     [3]complex128{100 + 1i, 10i, 10},
+			Byte:           [3]byte{1, 2, 3},
+			CustomOfByte:   CustomArrayOfByte{1, 2, 3},
+			Struct:         [3]Struct1{{"猿空"}, {"猿岳"}, {"猿河"}},
+			CustomOfStruct: CustomArrayOfStruct{{"猿空"}, {"猿岳"}, {"猿河"}},
 		},
 		NoTag: NoTag{
-			String:     [3]string{"猿将", "猿谷", "猿桜"},
-			Int:        [3]int{-1, 10, 100},
-			Uint:       [3]uint{1, 2, 3},
-			Float64:    [3]float64{1.1, 1000.123, 999.0},
-			Complex128: [3]complex128{100 + 1i, 10i, 10},
-			Byte:       [3]byte{1, 2, 3},
-			Struct:     [3]Struct2{{"猿空"}, {"猿岳"}, {"猿河"}},
+			String:         [3]string{"猿将", "猿谷", "猿桜"},
+			Int:            [3]int{-1, 10, 100},
+			Uint:           [3]uint{1, 2, 3},
+			Float64:        [3]float64{1.1, 1000.123, 999.0},
+			Complex128:     [3]complex128{100 + 1i, 10i, 10},
+			Byte:           [3]byte{1, 2, 3},
+			CustomOfByte:   CustomArrayOfByte{1, 2, 3},
+			Struct:         [3]Struct2{{"猿空"}, {"猿岳"}, {"猿河"}},
+			CustomOfStruct: CustomArrayOfStruct2{{"猿空"}, {"猿岳"}, {"猿河"}},
 		},
 	}
 	tests := map[string]struct {
@@ -526,13 +538,15 @@ func TestMask_Array(t *testing.T) {
 			},
 			want: Test{
 				Tag: Tag{
-					String:     [3]string{"test", "test", "test"},
-					Int:        [3]int{math.MaxInt, math.MaxInt, math.MaxInt},
-					Uint:       [3]uint{math.MaxUint, math.MaxUint, math.MaxUint},
-					Float64:    [3]float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
-					Complex128: [3]complex128{100 + 1i, 10i, 10},
-					Byte:       [3]byte{255, 255, 255},
-					Struct:     [3]Struct1{{"test"}, {"test"}, {"test"}},
+					String:         [3]string{"test", "test", "test"},
+					Int:            [3]int{math.MaxInt, math.MaxInt, math.MaxInt},
+					Uint:           [3]uint{math.MaxUint, math.MaxUint, math.MaxUint},
+					Float64:        [3]float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
+					Complex128:     [3]complex128{100 + 1i, 10i, 10},
+					Byte:           [3]byte{255, 255, 255},
+					CustomOfByte:   CustomArrayOfByte{255, 255, 255},
+					Struct:         [3]Struct1{{"test"}, {"test"}, {"test"}},
+					CustomOfStruct: CustomArrayOfStruct{{"test"}, {"test"}, {"test"}},
 				},
 				NoTag: input.NoTag,
 			},
@@ -557,17 +571,21 @@ func TestMask_Array(t *testing.T) {
 				m.RegisterMaskField("Complex128", "field")
 				m.RegisterMaskField("Byte", "field")
 				m.RegisterMaskField("Struct", "field")
+				m.RegisterMaskField("CustomOfByte", "field")
+				m.RegisterMaskField("CustomOfStruct", "field")
 			},
 			want: Test{
 				Tag: input.Tag,
 				NoTag: NoTag{
-					String:     [3]string{"test", "test", "test"},
-					Int:        [3]int{math.MaxInt, math.MaxInt, math.MaxInt},
-					Uint:       [3]uint{math.MaxUint, math.MaxUint, math.MaxUint},
-					Float64:    [3]float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
-					Complex128: [3]complex128{100 + 1i, 10i, 10},
-					Byte:       [3]byte{255, 255, 255},
-					Struct:     [3]Struct2{{"test"}, {"test"}, {"test"}},
+					String:         [3]string{"test", "test", "test"},
+					Int:            [3]int{math.MaxInt, math.MaxInt, math.MaxInt},
+					Uint:           [3]uint{math.MaxUint, math.MaxUint, math.MaxUint},
+					Float64:        [3]float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
+					Complex128:     [3]complex128{100 + 1i, 10i, 10},
+					Byte:           [3]byte{255, 255, 255},
+					CustomOfByte:   CustomArrayOfByte{255, 255, 255},
+					Struct:         [3]Struct2{{"test"}, {"test"}, {"test"}},
+					CustomOfStruct: CustomArrayOfStruct2{{"test"}, {"test"}, {"test"}},
 				},
 			},
 		},
@@ -603,6 +621,15 @@ func TestMask_Slice(t *testing.T) {
 	type Struct2 struct {
 		String string
 	}
+	type customString []string
+	type customInt []int
+	type customUint []uint
+	type customFloat64 []float64
+	type customComplex128 []complex128
+	type customByte []byte
+	type customStruct []Struct1
+	type customStruct2 []Struct2
+
 	type Tag struct {
 		String     []string     `mask:"test"`
 		Int        []int        `mask:"test"`
@@ -611,7 +638,16 @@ func TestMask_Slice(t *testing.T) {
 		Complex128 []complex128 `mask:"test"`
 		Byte       []byte       `mask:"test"`
 		Struct     []Struct1    `mask:"test"`
-		ZeroGuard  string
+
+		CustomString     customString     `mask:"test"`
+		CustomInt        customInt        `mask:"test"`
+		CustomUint       customUint       `mask:"test"`
+		CustomFloat64    customFloat64    `mask:"test"`
+		CustomComplex128 customComplex128 `mask:"test"`
+		CustomByte       customByte       `mask:"test"`
+		CustomStruct     customStruct     `mask:"test"`
+
+		ZeroGuard string
 	}
 	type NoTag struct {
 		String     []string
@@ -622,6 +658,14 @@ func TestMask_Slice(t *testing.T) {
 		Byte       []byte
 		Struct     []Struct2
 		ZeroGuard  string
+
+		CustomString     customString
+		CustomInt        customInt
+		CustomUint       customUint
+		CustomFloat64    customFloat64
+		CustomComplex128 customComplex128
+		CustomByte       customByte
+		CustomStruct     customStruct2
 	}
 	type Test struct {
 		Tag
@@ -636,6 +680,14 @@ func TestMask_Slice(t *testing.T) {
 			Complex128: []complex128{100 + 1i, 10i, 10},
 			Byte:       []byte{1, 2, 3},
 			Struct:     []Struct1{{"猿空"}, {"猿岳"}, {"猿河"}},
+
+			CustomString:     customString{"猿将", "猿谷", "猿桜"},
+			CustomInt:        customInt{-1, 10, 100},
+			CustomUint:       customUint{1, 2, 3},
+			CustomFloat64:    customFloat64{1.1, 1000.123, 999.0},
+			CustomComplex128: customComplex128{100 + 1i, 10i, 10},
+			CustomByte:       customByte{1, 2, 3},
+			CustomStruct:     customStruct{{"猿空"}, {"猿岳"}, {"猿河"}},
 		},
 		NoTag: NoTag{
 			String:     []string{"猿将", "猿谷", "猿桜"},
@@ -645,6 +697,14 @@ func TestMask_Slice(t *testing.T) {
 			Complex128: []complex128{100 + 1i, 10i, 10},
 			Byte:       []byte{1, 2, 3},
 			Struct:     []Struct2{{"猿空"}, {"猿岳"}, {"猿河"}},
+
+			CustomString:     customString{"猿将", "猿谷", "猿桜"},
+			CustomInt:        customInt{-1, 10, 100},
+			CustomUint:       customUint{1, 2, 3},
+			CustomFloat64:    customFloat64{1.1, 1000.123, 999.0},
+			CustomComplex128: customComplex128{100 + 1i, 10i, 10},
+			CustomByte:       customByte{1, 2, 3},
+			CustomStruct:     customStruct2{{"猿空"}, {"猿岳"}, {"猿河"}},
 		},
 	}
 	tests := map[string]struct {
@@ -676,42 +736,70 @@ func TestMask_Slice(t *testing.T) {
 			prepare: func(m *Masker) {},
 			input: Test{
 				Tag: Tag{
-					String:     []string{},
-					Int:        []int{},
-					Uint:       []uint{},
-					Float64:    []float64{},
-					Complex128: []complex128{},
-					Byte:       []byte{},
-					Struct:     []Struct1{},
+					String:           []string{},
+					Int:              []int{},
+					Uint:             []uint{},
+					Float64:          []float64{},
+					Complex128:       []complex128{},
+					Byte:             []byte{},
+					Struct:           []Struct1{},
+					CustomString:     []string{},
+					CustomInt:        []int{},
+					CustomUint:       []uint{},
+					CustomFloat64:    []float64{},
+					CustomComplex128: []complex128{},
+					CustomByte:       []byte{},
+					CustomStruct:     customStruct{},
 				},
 				NoTag: NoTag{
-					String:     []string{},
-					Int:        []int{},
-					Uint:       []uint{},
-					Float64:    []float64{},
-					Complex128: []complex128{},
-					Byte:       []byte{},
-					Struct:     []Struct2{},
+					String:           []string{},
+					Int:              []int{},
+					Uint:             []uint{},
+					Float64:          []float64{},
+					Complex128:       []complex128{},
+					Byte:             []byte{},
+					Struct:           []Struct2{},
+					CustomString:     []string{},
+					CustomInt:        []int{},
+					CustomUint:       []uint{},
+					CustomFloat64:    []float64{},
+					CustomComplex128: []complex128{},
+					CustomByte:       []byte{},
+					CustomStruct:     customStruct2{},
 				},
 			},
 			want: Test{
 				Tag: Tag{
-					String:     []string{},
-					Int:        []int{},
-					Uint:       []uint{},
-					Float64:    []float64{},
-					Complex128: []complex128{},
-					Byte:       []byte{},
-					Struct:     []Struct1{},
+					String:           []string{},
+					Int:              []int{},
+					Uint:             []uint{},
+					Float64:          []float64{},
+					Complex128:       []complex128{},
+					Byte:             []byte{},
+					Struct:           []Struct1{},
+					CustomString:     []string{},
+					CustomInt:        []int{},
+					CustomUint:       []uint{},
+					CustomFloat64:    []float64{},
+					CustomComplex128: []complex128{},
+					CustomByte:       []byte{},
+					CustomStruct:     customStruct{},
 				},
 				NoTag: NoTag{
-					String:     []string{},
-					Int:        []int{},
-					Uint:       []uint{},
-					Float64:    []float64{},
-					Complex128: []complex128{},
-					Byte:       []byte{},
-					Struct:     []Struct2{},
+					String:           []string{},
+					Int:              []int{},
+					Uint:             []uint{},
+					Float64:          []float64{},
+					Complex128:       []complex128{},
+					Byte:             []byte{},
+					Struct:           []Struct2{},
+					CustomString:     []string{},
+					CustomInt:        []int{},
+					CustomUint:       []uint{},
+					CustomFloat64:    []float64{},
+					CustomComplex128: []complex128{},
+					CustomByte:       []byte{},
+					CustomStruct:     customStruct2{},
 				},
 			},
 		},
@@ -727,13 +815,20 @@ func TestMask_Slice(t *testing.T) {
 			input: input,
 			want: Test{
 				Tag: Tag{
-					String:     []string{"test", "test", "test"},
-					Int:        []int{math.MaxInt, math.MaxInt, math.MaxInt},
-					Uint:       []uint{math.MaxUint, math.MaxUint, math.MaxUint},
-					Float64:    []float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
-					Complex128: []complex128{100 + 1i, 10i, 10},
-					Byte:       []byte{255, 255, 255},
-					Struct:     []Struct1{{"test"}, {"test"}, {"test"}},
+					String:           []string{"test", "test", "test"},
+					Int:              []int{math.MaxInt, math.MaxInt, math.MaxInt},
+					Uint:             []uint{math.MaxUint, math.MaxUint, math.MaxUint},
+					Float64:          []float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
+					Complex128:       []complex128{100 + 1i, 10i, 10},
+					Byte:             []byte{255, 255, 255},
+					Struct:           []Struct1{{"test"}, {"test"}, {"test"}},
+					CustomString:     []string{"test", "test", "test"},
+					CustomInt:        []int{math.MaxInt, math.MaxInt, math.MaxInt},
+					CustomUint:       []uint{math.MaxUint, math.MaxUint, math.MaxUint},
+					CustomFloat64:    []float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
+					CustomComplex128: []complex128{100 + 1i, 10i, 10},
+					CustomByte:       []byte{255, 255, 255},
+					CustomStruct:     customStruct{{"test"}, {"test"}, {"test"}},
 				},
 				NoTag: input.NoTag,
 			},
@@ -758,18 +853,42 @@ func TestMask_Slice(t *testing.T) {
 				m.RegisterMaskField("Complex128", "field")
 				m.RegisterMaskField("Byte", "field")
 				m.RegisterMaskField("Struct", "field")
+				m.RegisterMaskField("CustomString", "field")
+				m.RegisterMaskField("CustomInt", "field")
+				m.RegisterMaskField("CustomInt8", "field")
+				m.RegisterMaskField("CustomInt16", "field")
+				m.RegisterMaskField("CustomInt32", "field")
+				m.RegisterMaskField("CustomInt64", "field")
+				m.RegisterMaskField("CustomUint", "field")
+				m.RegisterMaskField("CustomUint8", "field")
+				m.RegisterMaskField("CustomUint16", "field")
+				m.RegisterMaskField("CustomUint32", "field")
+				m.RegisterMaskField("CustomUint64", "field")
+				m.RegisterMaskField("CustomFloat32", "field")
+				m.RegisterMaskField("CustomFloat64", "field")
+				m.RegisterMaskField("CustomComplex64", "field")
+				m.RegisterMaskField("CustomComplex128", "field")
+				m.RegisterMaskField("CustomByte", "field")
+				m.RegisterMaskField("CustomStruct", "field")
 			},
 			input: input,
 			want: Test{
 				Tag: input.Tag,
 				NoTag: NoTag{
-					String:     []string{"test", "test", "test"},
-					Int:        []int{math.MaxInt, math.MaxInt, math.MaxInt},
-					Uint:       []uint{math.MaxUint, math.MaxUint, math.MaxUint},
-					Float64:    []float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
-					Complex128: []complex128{100 + 1i, 10i, 10},
-					Byte:       []byte{255, 255, 255},
-					Struct:     []Struct2{{"test"}, {"test"}, {"test"}},
+					String:           []string{"test", "test", "test"},
+					Int:              []int{math.MaxInt, math.MaxInt, math.MaxInt},
+					Uint:             []uint{math.MaxUint, math.MaxUint, math.MaxUint},
+					Float64:          []float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
+					Complex128:       []complex128{100 + 1i, 10i, 10},
+					Byte:             []byte{255, 255, 255},
+					Struct:           []Struct2{{"test"}, {"test"}, {"test"}},
+					CustomString:     []string{"test", "test", "test"},
+					CustomInt:        []int{math.MaxInt, math.MaxInt, math.MaxInt},
+					CustomUint:       []uint{math.MaxUint, math.MaxUint, math.MaxUint},
+					CustomFloat64:    []float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
+					CustomComplex128: []complex128{100 + 1i, 10i, 10},
+					CustomByte:       []byte{255, 255, 255},
+					CustomStruct:     customStruct2{{"test"}, {"test"}, {"test"}},
 				},
 			},
 		},
@@ -802,6 +921,16 @@ func TestMask_Map(t *testing.T) {
 	type Key struct {
 		Seq int
 	}
+	type customString map[string]string
+	type customInt map[string]int
+	type customUint map[string]uint
+	type customFloat32 map[string]float32
+	type customFloat64 map[string]float64
+	type customComplex128 map[string]complex128
+	type customByte map[string]byte
+	type customIntKey map[int]string
+	type customStructKey map[Key]string
+
 	type Tag struct {
 		String     map[string]string     `mask:"test"`
 		Int        map[string]int        `mask:"test"`
@@ -812,7 +941,18 @@ func TestMask_Map(t *testing.T) {
 		Byte       map[string]byte       `mask:"test"`
 		IntKey     map[int]string        `mask:"test"`
 		StructKey  map[Key]string        `mask:"test"`
-		ZeroGuard  string
+
+		CustomString     customString     `mask:"test"`
+		CustomInt        customInt        `mask:"test"`
+		CustomUint       customUint       `mask:"test"`
+		CustomFloat32    customFloat32    `mask:"test"`
+		CustomFloat64    customFloat64    `mask:"test"`
+		CustomComplex128 customComplex128 `mask:"test"`
+		CustomByte       customByte       `mask:"test"`
+		CustomIntKey     customIntKey     `mask:"test"`
+		CustomStructKey  customStructKey  `mask:"test"`
+
+		ZeroGuard string
 	}
 	type NoTag struct {
 		String     map[string]string
@@ -822,10 +962,20 @@ func TestMask_Map(t *testing.T) {
 		Float64    map[string]float64
 		Complex128 map[string]complex128
 		Byte       map[string]byte
-		StringKey  map[string]string
 		IntKey     map[int]string
 		StructKey  map[Key]string
-		ZeroGuard  string
+
+		CustomString     customString
+		CustomInt        customInt
+		CustomUint       customUint
+		CustomFloat32    customFloat32
+		CustomFloat64    customFloat64
+		CustomComplex128 customComplex128
+		CustomByte       customByte
+		CustomIntKey     customIntKey
+		CustomStructKey  customStructKey
+
+		ZeroGuard string
 	}
 	type Test struct {
 		Tag
@@ -843,6 +993,16 @@ func TestMask_Map(t *testing.T) {
 			Byte:       map[string]byte{"猿将": 1, "猿谷": 2, "猿桜": 3},
 			IntKey:     map[int]string{1: "猿将", 2: "猿谷", 3: "猿桜"},
 			StructKey:  map[Key]string{{1}: "猿将", {2}: "猿谷", {3}: "猿桜"},
+
+			CustomString:     customString{"猿将": "大関", "猿谷": "小結", "猿桜": "三枚目"},
+			CustomInt:        customInt{"猿将": -1, "猿谷": 10, "猿桜": 100},
+			CustomUint:       customUint{"猿将": 1, "猿谷": 2, "猿桜": 3},
+			CustomFloat32:    customFloat32{"猿将": 1.1, "猿谷": 1000.123, "猿桜": 999.0},
+			CustomFloat64:    customFloat64{"猿将": 1.1, "猿谷": 1000.123, "猿桜": 999.0},
+			CustomComplex128: customComplex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
+			CustomByte:       customByte{"猿将": 1, "猿谷": 2, "猿桜": 3},
+			CustomIntKey:     customIntKey{1: "猿将", 2: "猿谷", 3: "猿桜"},
+			CustomStructKey:  customStructKey{{1}: "猿将", {2}: "猿谷", {3}: "猿桜"},
 		},
 		NoTag: NoTag{
 			String:     map[string]string{"猿将": "大関", "猿谷": "小結", "猿桜": "三枚目"},
@@ -852,9 +1012,18 @@ func TestMask_Map(t *testing.T) {
 			Float64:    map[string]float64{"猿将": 1.1, "猿谷": 1000.123, "猿桜": 999.0},
 			Complex128: map[string]complex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
 			Byte:       map[string]byte{"猿将": 1, "猿谷": 2, "猿桜": 3},
-			StringKey:  map[string]string{"猿将": "大関", "猿谷": "小結", "猿桜": "三枚目"},
 			IntKey:     map[int]string{1: "猿将", 2: "猿谷", 3: "猿桜"},
 			StructKey:  map[Key]string{{1}: "猿将", {2}: "猿谷", {3}: "猿桜"},
+
+			CustomString:     customString{"猿将": "大関", "猿谷": "小結", "猿桜": "三枚目"},
+			CustomInt:        customInt{"猿将": -1, "猿谷": 10, "猿桜": 100},
+			CustomUint:       customUint{"猿将": 1, "猿谷": 2, "猿桜": 3},
+			CustomFloat32:    customFloat32{"猿将": 1.1, "猿谷": 1000.123, "猿桜": 999.0},
+			CustomFloat64:    customFloat64{"猿将": 1.1, "猿谷": 1000.123, "猿桜": 999.0},
+			CustomComplex128: customComplex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
+			CustomByte:       customByte{"猿将": 1, "猿谷": 2, "猿桜": 3},
+			CustomIntKey:     customIntKey{1: "猿将", 2: "猿谷", 3: "猿桜"},
+			CustomStructKey:  customStructKey{{1}: "猿将", {2}: "猿谷", {3}: "猿桜"},
 		},
 	}
 	tests := map[string]struct {
@@ -895,6 +1064,16 @@ func TestMask_Map(t *testing.T) {
 					Byte:       map[string]byte{"猿将": 255, "猿谷": 255, "猿桜": 255},
 					IntKey:     map[int]string{1: "test", 2: "test", 3: "test"},
 					StructKey:  map[Key]string{{1}: "test", {2}: "test", {3}: "test"},
+
+					CustomString:     customString{"猿将": "test", "猿谷": "test", "猿桜": "test"},
+					CustomInt:        customInt{"猿将": math.MaxInt, "猿谷": math.MaxInt, "猿桜": math.MaxInt},
+					CustomUint:       customUint{"猿将": math.MaxUint, "猿谷": math.MaxUint, "猿桜": math.MaxUint},
+					CustomFloat32:    customFloat32{"猿将": float32(math.Inf(0)), "猿谷": float32(math.Inf(0)), "猿桜": float32(math.Inf(0))},
+					CustomFloat64:    customFloat64{"猿将": math.MaxFloat64, "猿谷": math.MaxFloat64, "猿桜": math.MaxFloat64},
+					CustomComplex128: customComplex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
+					CustomByte:       customByte{"猿将": 255, "猿谷": 255, "猿桜": 255},
+					CustomIntKey:     customIntKey{1: "test", 2: "test", 3: "test"},
+					CustomStructKey:  customStructKey{{1}: "test", {2}: "test", {3}: "test"},
 				},
 				NoTag: input.NoTag,
 			},
@@ -920,6 +1099,25 @@ func TestMask_Map(t *testing.T) {
 				m.RegisterMaskField("Byte", "field")
 				m.RegisterMaskField("IntKey", "field")
 				m.RegisterMaskField("StructKey", "field")
+
+				m.RegisterMaskField("CustomString", "field")
+				m.RegisterMaskField("CustomInt", "field")
+				m.RegisterMaskField("CustomInt8", "field")
+				m.RegisterMaskField("CustomInt16", "field")
+				m.RegisterMaskField("CustomInt32", "field")
+				m.RegisterMaskField("CustomInt64", "field")
+				m.RegisterMaskField("CustomUint", "field")
+				m.RegisterMaskField("CustomUint8", "field")
+				m.RegisterMaskField("CustomUint16", "field")
+				m.RegisterMaskField("CustomUint32", "field")
+				m.RegisterMaskField("CustomUint64", "field")
+				m.RegisterMaskField("CustomFloat32", "field")
+				m.RegisterMaskField("CustomFloat64", "field")
+				m.RegisterMaskField("CustomComplex64", "field")
+				m.RegisterMaskField("CustomComplex128", "field")
+				m.RegisterMaskField("CustomByte", "field")
+				m.RegisterMaskField("CustomIntKey", "field")
+				m.RegisterMaskField("CustomStructKey", "field")
 				// map key
 				m.RegisterMaskField("猿将", "field")
 			},
@@ -934,9 +1132,18 @@ func TestMask_Map(t *testing.T) {
 					Float64:    map[string]float64{"猿将": math.MaxFloat64, "猿谷": math.MaxFloat64, "猿桜": math.MaxFloat64},
 					Complex128: map[string]complex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
 					Byte:       map[string]byte{"猿将": 255, "猿谷": 255, "猿桜": 255},
-					StringKey:  map[string]string{"猿将": "test", "猿谷": "小結", "猿桜": "三枚目"},
 					IntKey:     map[int]string{1: "test", 2: "test", 3: "test"},
 					StructKey:  map[Key]string{{1}: "test", {2}: "test", {3}: "test"},
+
+					CustomString:     customString{"猿将": "test", "猿谷": "test", "猿桜": "test"},
+					CustomInt:        customInt{"猿将": math.MaxInt, "猿谷": math.MaxInt, "猿桜": math.MaxInt},
+					CustomUint:       customUint{"猿将": math.MaxUint, "猿谷": math.MaxUint, "猿桜": math.MaxUint},
+					CustomFloat32:    customFloat32{"猿将": float32(math.Inf(0)), "猿谷": float32(math.Inf(0)), "猿桜": float32(math.Inf(0))},
+					CustomFloat64:    customFloat64{"猿将": math.MaxFloat64, "猿谷": math.MaxFloat64, "猿桜": math.MaxFloat64},
+					CustomComplex128: customComplex128{"猿将": 100 + 1i, "猿谷": 10i, "猿桜": 10},
+					CustomByte:       customByte{"猿将": 255, "猿谷": 255, "猿桜": 255},
+					CustomIntKey:     customIntKey{1: "test", 2: "test", 3: "test"},
+					CustomStructKey:  customStructKey{{1}: "test", {2}: "test", {3}: "test"},
 				},
 			},
 		},
@@ -972,31 +1179,40 @@ func TestMask_Pointer(t *testing.T) {
 	type Struct2 struct {
 		String string
 	}
+	type customMap map[string]string
+	type customSlice []string
+	type customArray [3]string
 	type Tag struct {
-		String     *string            `mask:"test"`
-		Int        *int               `mask:"test"`
-		Uint       *uint              `mask:"test"`
-		Float64    *float64           `mask:"test"`
-		Complex128 *complex128        `mask:"test"`
-		Byte       *byte              `mask:"test"`
-		Array      *[3]string         `mask:"test"`
-		Slice      *[]string          `mask:"test"`
-		Map        *map[string]string `mask:"test"`
-		Struct     *Struct1
-		ZeroGuard  string
+		String      *string            `mask:"test"`
+		Int         *int               `mask:"test"`
+		Uint        *uint              `mask:"test"`
+		Float64     *float64           `mask:"test"`
+		Complex128  *complex128        `mask:"test"`
+		Byte        *byte              `mask:"test"`
+		Array       *[3]string         `mask:"test"`
+		CustomArray *customArray       `mask:"test"`
+		Slice       *[]string          `mask:"test"`
+		CustomSlice *customSlice       `mask:"test"`
+		Map         *map[string]string `mask:"test"`
+		CustomMap   *customMap         `mask:"test"`
+		Struct      *Struct1
+		ZeroGuard   string
 	}
 	type NoTag struct {
-		String     *string
-		Int        *int
-		Uint       *uint
-		Float64    *float64
-		Complex128 *complex128
-		Byte       *byte
-		Array      *[3]string
-		Slice      *[]string
-		Map        *map[string]string
-		Struct     *Struct2
-		ZeroGuard  string
+		String      *string
+		Int         *int
+		Uint        *uint
+		Float64     *float64
+		Complex128  *complex128
+		Byte        *byte
+		Array       *[3]string
+		CustomArray *customArray
+		Slice       *[]string
+		CustomSlice *customSlice
+		Map         *map[string]string
+		CustomMap   *customMap
+		Struct      *Struct2
+		ZeroGuard   string
 	}
 	type Test struct {
 		Tag
@@ -1004,28 +1220,34 @@ func TestMask_Pointer(t *testing.T) {
 	}
 	input := Test{
 		Tag: Tag{
-			String:     convertStringPtr("龍谷"),
-			Int:        convertIntPtr(123),
-			Uint:       convertUintPtr(321),
-			Float64:    convertFloat64Ptr(123.456),
-			Complex128: convertComplex128Ptr(123 + 456i),
-			Byte:       convertBytePtr(2),
-			Array:      &([3]string{"序ノ口", "序二段", "三枚目"}),
-			Slice:      &[]string{"序ノ口", "序二段", "三枚目"},
-			Map:        &map[string]string{"序ノ口": "石川", "序二段": "高橋", "三枚目": "猿河"},
-			Struct:     &Struct1{"稽古場"},
+			String:      convertStringPtr("龍谷"),
+			Int:         convertIntPtr(123),
+			Uint:        convertUintPtr(321),
+			Float64:     convertFloat64Ptr(123.456),
+			Complex128:  convertComplex128Ptr(123 + 456i),
+			Byte:        convertBytePtr(2),
+			Array:       &([3]string{"序ノ口", "序二段", "三枚目"}),
+			CustomArray: &(customArray{"序ノ口", "序二段", "三枚目"}),
+			Slice:       &[]string{"序ノ口", "序二段", "三枚目"},
+			CustomSlice: &customSlice{"序ノ口", "序二段", "三枚目"},
+			Map:         &map[string]string{"序ノ口": "石川", "序二段": "高橋", "三枚目": "猿河"},
+			CustomMap:   &customMap{"序ノ口": "石川", "序二段": "高橋", "三枚目": "猿河"},
+			Struct:      &Struct1{"稽古場"},
 		},
 		NoTag: NoTag{
-			String:     convertStringPtr("龍谷"),
-			Int:        convertIntPtr(123),
-			Uint:       convertUintPtr(321),
-			Float64:    convertFloat64Ptr(123.456),
-			Complex128: convertComplex128Ptr(123 + 456i),
-			Byte:       convertBytePtr(2),
-			Array:      &([3]string{"序ノ口", "序二段", "三枚目"}),
-			Slice:      &[]string{"序ノ口", "序二段", "三枚目"},
-			Map:        &map[string]string{"序ノ口": "石川", "序二段": "高橋", "三枚目": "猿河"},
-			Struct:     &Struct2{"稽古場"},
+			String:      convertStringPtr("龍谷"),
+			Int:         convertIntPtr(123),
+			Uint:        convertUintPtr(321),
+			Float64:     convertFloat64Ptr(123.456),
+			Complex128:  convertComplex128Ptr(123 + 456i),
+			Byte:        convertBytePtr(2),
+			Array:       &([3]string{"序ノ口", "序二段", "三枚目"}),
+			CustomArray: &(customArray{"序ノ口", "序二段", "三枚目"}),
+			Slice:       &[]string{"序ノ口", "序二段", "三枚目"},
+			CustomSlice: &customSlice{"序ノ口", "序二段", "三枚目"},
+			Map:         &map[string]string{"序ノ口": "石川", "序二段": "高橋", "三枚目": "猿河"},
+			CustomMap:   &customMap{"序ノ口": "石川", "序二段": "高橋", "三枚目": "猿河"},
+			Struct:      &Struct2{"稽古場"},
 		},
 	}
 
@@ -1058,16 +1280,19 @@ func TestMask_Pointer(t *testing.T) {
 			input: input,
 			want: Test{
 				Tag: Tag{
-					String:     convertStringPtr("test"),
-					Int:        convertIntPtr(math.MaxInt),
-					Uint:       convertUintPtr(math.MaxUint),
-					Float64:    convertFloat64Ptr(math.MaxFloat64),
-					Complex128: convertComplex128Ptr(123 + 456i),
-					Byte:       convertBytePtr(255),
-					Array:      &([3]string{"test", "test", "test"}),
-					Slice:      &[]string{"test", "test", "test"},
-					Map:        &map[string]string{"序ノ口": "test", "序二段": "test", "三枚目": "test"},
-					Struct:     &Struct1{"test"},
+					String:      convertStringPtr("test"),
+					Int:         convertIntPtr(math.MaxInt),
+					Uint:        convertUintPtr(math.MaxUint),
+					Float64:     convertFloat64Ptr(math.MaxFloat64),
+					Complex128:  convertComplex128Ptr(123 + 456i),
+					Byte:        convertBytePtr(255),
+					Array:       &([3]string{"test", "test", "test"}),
+					CustomArray: &(customArray{"test", "test", "test"}),
+					Slice:       &[]string{"test", "test", "test"},
+					CustomSlice: &customSlice{"test", "test", "test"},
+					Map:         &map[string]string{"序ノ口": "test", "序二段": "test", "三枚目": "test"},
+					CustomMap:   &customMap{"序ノ口": "test", "序二段": "test", "三枚目": "test"},
+					Struct:      &Struct1{"test"},
 				},
 				NoTag: input.NoTag,
 			},
@@ -1082,23 +1307,29 @@ func TestMask_Pointer(t *testing.T) {
 				m.RegisterMaskField("Complex128", "field")
 				m.RegisterMaskField("Byte", "field")
 				m.RegisterMaskField("Array", "field")
+				m.RegisterMaskField("CustomArray", "field")
 				m.RegisterMaskField("Slice", "field")
+				m.RegisterMaskField("CustomSlice", "field")
 				m.RegisterMaskField("Map", "field")
+				m.RegisterMaskField("CustomMap", "field")
 			},
 			input: input,
 			want: Test{
 				Tag: input.Tag,
 				NoTag: NoTag{
-					String:     convertStringPtr("test"),
-					Int:        convertIntPtr(math.MaxInt),
-					Uint:       convertUintPtr(math.MaxUint),
-					Float64:    convertFloat64Ptr(math.MaxFloat64),
-					Complex128: convertComplex128Ptr(123 + 456i),
-					Byte:       convertBytePtr(255),
-					Array:      &([3]string{"test", "test", "test"}),
-					Slice:      &[]string{"test", "test", "test"},
-					Map:        &map[string]string{"序ノ口": "test", "序二段": "test", "三枚目": "test"},
-					Struct:     &Struct2{"test"},
+					String:      convertStringPtr("test"),
+					Int:         convertIntPtr(math.MaxInt),
+					Uint:        convertUintPtr(math.MaxUint),
+					Float64:     convertFloat64Ptr(math.MaxFloat64),
+					Complex128:  convertComplex128Ptr(123 + 456i),
+					Byte:        convertBytePtr(255),
+					Array:       &([3]string{"test", "test", "test"}),
+					CustomArray: &(customArray{"test", "test", "test"}),
+					Slice:       &[]string{"test", "test", "test"},
+					CustomSlice: &customSlice{"test", "test", "test"},
+					Map:         &map[string]string{"序ノ口": "test", "序二段": "test", "三枚目": "test"},
+					CustomMap:   &customMap{"序ノ口": "test", "序二段": "test", "三枚目": "test"},
+					Struct:      &Struct2{"test"},
 				},
 			},
 		},
@@ -1525,11 +1756,19 @@ func TestMaskFilled(t *testing.T) {
 	type stringSliceTest struct {
 		Usagi []string `mask:"filled"`
 	}
+	type stringCustomSlice []string
+	type customStringSliceTest struct {
+		Usagi stringCustomSlice `mask:"filled"`
+	}
 	type stringSlicePtrTest struct {
 		Usagi *[]string `mask:"filled"`
 	}
 	type stringToStringMapTest struct {
 		Usagi map[string]string `mask:"filled"`
+	}
+	type stringToStringMap map[string]string
+	type customStringToStringMapTest struct {
+		Usagi stringToStringMap `mask:"filled"`
 	}
 	type intToStringMapTest struct {
 		Usagi map[int]string `mask:"filled"`
@@ -1562,9 +1801,17 @@ func TestMaskFilled(t *testing.T) {
 			input: &stringSliceTest{Usagi: []string{"ハァ？", "ウラ", "フゥン"}},
 			want:  &stringSliceTest{Usagi: []string{"***", "**", "***"}},
 		},
+		"custom string slice fields": {
+			input: &customStringSliceTest{Usagi: stringCustomSlice{"ハァ？", "ウラ", "フゥン"}},
+			want:  &customStringSliceTest{Usagi: stringCustomSlice{"***", "**", "***"}},
+		},
 		"nil string slice fields": {
 			input: &stringSliceTest{},
 			want:  &stringSliceTest{Usagi: ([]string)(nil)},
+		},
+		"nil custom string slice fields": {
+			input: &customStringSliceTest{},
+			want:  &customStringSliceTest{Usagi: (stringCustomSlice)(nil)},
 		},
 		"string slice ptr fields": {
 			input: &stringSlicePtrTest{Usagi: &([]string{"ハァ？", "ウラ", "フゥン"})},
@@ -1577,6 +1824,10 @@ func TestMaskFilled(t *testing.T) {
 		"string to string map fields": {
 			input: &stringToStringMapTest{Usagi: map[string]string{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
 			want:  &stringToStringMapTest{Usagi: map[string]string{"うさぎ": "***", "うさぎ2": "**", "うさぎ3": "***"}},
+		},
+		"custom string to string map fields": {
+			input: &customStringToStringMapTest{Usagi: stringToStringMap{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
+			want:  &customStringToStringMapTest{Usagi: stringToStringMap{"うさぎ": "***", "うさぎ2": "**", "うさぎ3": "***"}},
 		},
 		"int to string map fields": {
 			input: &intToStringMapTest{Usagi: map[int]string{1: "ハァ？", 2: "ウラ", 3: "フゥン"}},
@@ -1665,8 +1916,16 @@ func TestMaskHashString(t *testing.T) {
 	type stringSliceTest struct {
 		Usagi []string `mask:"hash"`
 	}
+	type stringCustomSlice []string
+	type stringCustomSliceTest struct {
+		Usagi stringCustomSlice `mask:"hash"`
+	}
 	type stringArrayTest struct {
 		Usagi [3]string `mask:"hash"`
+	}
+	type stringArray [3]string
+	type stringCustomArrayTest struct {
+		Usagi stringArray `mask:"hash"`
 	}
 	type stringSlicePtrTest struct {
 		Usagi *[]string `mask:"hash"`
@@ -1679,6 +1938,10 @@ func TestMaskHashString(t *testing.T) {
 	}
 	type structToStringMapTest struct {
 		Usagi map[stringTest]string `mask:"hash"`
+	}
+	type stringMap map[string]string
+	type structToCustomStringMapTest struct {
+		Usagi stringMap `mask:"hash"`
 	}
 
 	tests := map[string]struct {
@@ -1709,6 +1972,14 @@ func TestMaskHashString(t *testing.T) {
 				"17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
 			}},
 		},
+		"string custom slice fields": {
+			input: &stringCustomSliceTest{Usagi: stringCustomSlice{"ハァ？", "ウラ", "フゥン"}},
+			want: &stringCustomSliceTest{Usagi: stringCustomSlice{
+				"48a8b33f36a35631f584844686adaba89a6f156a",
+				"ecef3e43f07f7150c089e99d5e1041259b1189d5",
+				"17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
+			}},
+		},
 		"string array fields": {
 			input: &stringArrayTest{Usagi: [3]string{"ハァ？", "ウラ", "フゥン"}},
 			want: &stringArrayTest{Usagi: [3]string{
@@ -1717,9 +1988,21 @@ func TestMaskHashString(t *testing.T) {
 				"17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
 			}},
 		},
+		"custom string array fields": {
+			input: &stringCustomArrayTest{Usagi: stringArray{"ハァ？", "ウラ", "フゥン"}},
+			want: &stringCustomArrayTest{Usagi: stringArray{
+				"48a8b33f36a35631f584844686adaba89a6f156a",
+				"ecef3e43f07f7150c089e99d5e1041259b1189d5",
+				"17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
+			}},
+		},
 		"nil string slice fields": {
 			input: &stringSliceTest{},
 			want:  &stringSliceTest{Usagi: ([]string)(nil)},
+		},
+		"nil custom string slice fields": {
+			input: &stringCustomSliceTest{},
+			want:  &stringCustomSliceTest{Usagi: (stringCustomSlice)(nil)},
 		},
 		"string slice ptr fields": {
 			input: &stringSlicePtrTest{Usagi: &([]string{"ハァ？", "ウラ", "フゥン"})},
@@ -1751,10 +2034,18 @@ func TestMaskHashString(t *testing.T) {
 		},
 		"struct to string map fields": {
 			input: &structToStringMapTest{Usagi: map[stringTest]string{{Usagi: "ヤハッ！"}: "ハァ？", {Usagi: "ヤハッ！！"}: "ウラ", {Usagi: "ヤハッ！！！"}: "フゥン"}},
-			want: &structToStringMapTest{Usagi: map[stringTest]string{{
-				Usagi: "ヤハッ！"}: "48a8b33f36a35631f584844686adaba89a6f156a",
+			want: &structToStringMapTest{Usagi: map[stringTest]string{
+				{Usagi: "ヤハッ！"}:   "48a8b33f36a35631f584844686adaba89a6f156a",
 				{Usagi: "ヤハッ！！"}:  "ecef3e43f07f7150c089e99d5e1041259b1189d5",
 				{Usagi: "ヤハッ！！！"}: "17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
+			}},
+		},
+		"struct to custom string map fields": {
+			input: &structToCustomStringMapTest{Usagi: stringMap{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
+			want: &structToCustomStringMapTest{Usagi: stringMap{
+				"うさぎ":  "48a8b33f36a35631f584844686adaba89a6f156a",
+				"うさぎ2": "ecef3e43f07f7150c089e99d5e1041259b1189d5",
+				"うさぎ3": "17fa078ad3f2c34c17ee58b9119963548ddcf1ef",
 			}},
 		},
 	}
@@ -1800,6 +2091,10 @@ func TestMaskRandom(t *testing.T) {
 	type intSliceTest struct {
 		Usagi []int `mask:"random1000"`
 	}
+	type customIntSlice []int
+	type customIntSliceTest struct {
+		Usagi customIntSlice `mask:"random1000"`
+	}
 	type int32SliceTest struct {
 		Usagi []int32 `mask:"random1000"`
 	}
@@ -1808,6 +2103,10 @@ func TestMaskRandom(t *testing.T) {
 	}
 	type intArrayTest struct {
 		Usagi [2]int `mask:"random1000"`
+	}
+	type customIntArray [2]int
+	type customIntArrayTest struct {
+		Usagi customIntArray `mask:"random1000"`
 	}
 	type int32ArrayTest struct {
 		Usagi [2]int32 `mask:"random1000"`
@@ -1851,6 +2150,10 @@ func TestMaskRandom(t *testing.T) {
 	type stringToInt64Test struct {
 		Usagi map[string]int64 `mask:"random1000"`
 	}
+	type stringToInt map[string]int
+	type customStringToMapTest struct {
+		Usagi stringToInt `mask:"random1000"`
+	}
 
 	tests := map[string]struct {
 		input any
@@ -1885,8 +2188,8 @@ func TestMaskRandom(t *testing.T) {
 			want:  &intPtrTest{Usagi: nil},
 		},
 		"int slice fields": {
-			input: &intSliceTest{Usagi: []int{20190122, 20200501, 20200501}},
-			want:  &intSliceTest{Usagi: []int{829, 830, 400}},
+			input: &customIntSliceTest{Usagi: customIntSlice{20190122, 20200501, 20200501}},
+			want:  &customIntSliceTest{Usagi: customIntSlice{829, 830, 400}},
 		},
 		"int32 slice fields": {
 			input: &int32SliceTest{Usagi: []int32{20190122, 20200501, 20200501}},
@@ -1903,6 +2206,10 @@ func TestMaskRandom(t *testing.T) {
 		"int32 array fields": {
 			input: &int32ArrayTest{Usagi: [2]int32{20190122, 20200501}},
 			want:  &int32ArrayTest{Usagi: [2]int32{829, 830}},
+		},
+		"custom int32 array fields": {
+			input: &customIntArrayTest{Usagi: customIntArray{20190122, 20200501}},
+			want:  &customIntArrayTest{Usagi: customIntArray{829, 830}},
 		},
 		"int64 array fields": {
 			input: &int64ArrayTest{Usagi: [2]int64{20190122, 20200501}},
@@ -1980,6 +2287,10 @@ func TestMaskRandom(t *testing.T) {
 			input: &stringToInt64Test{Usagi: map[string]int64{"うさぎ": 20190122}},
 			want:  &stringToInt64Test{Usagi: map[string]int64{"うさぎ": 829}},
 		},
+		"string to custom int map fields": {
+			input: &customStringToMapTest{Usagi: stringToInt{"うさぎ": 20190122}},
+			want:  &customStringToMapTest{Usagi: stringToInt{"うさぎ": 829}},
+		},
 	}
 
 	for name, tt := range tests {
@@ -2040,7 +2351,10 @@ func TestMaskZero(t *testing.T) {
 	type structTest struct {
 		StringTest stringTest `mask:"zero"`
 	}
-
+	type stringMap map[string]string
+	type customStringMapTest struct {
+		Usagi stringMap `mask:"zero"`
+	}
 	tests := map[string]struct {
 		input any
 		want  any
@@ -2120,6 +2434,14 @@ func TestMaskZero(t *testing.T) {
 		"nil map string to string fields": {
 			input: &mapStringToStringTest{},
 			want:  &mapStringToStringTest{},
+		},
+		"custom map string to string fields": {
+			input: &customStringMapTest{Usagi: stringMap{"うさぎ": "ハァ？", "うさぎ2": "ウラ", "うさぎ3": "フゥン"}},
+			want:  &customStringMapTest{},
+		},
+		"custom nil map string to string fields": {
+			input: &customStringMapTest{},
+			want:  &customStringMapTest{},
 		},
 		"struct fields": {
 			input: &structTest{
@@ -2285,6 +2607,7 @@ func newMaskerTestCase(name string) string {
 func cleanup(t *testing.T) {
 	t.Helper()
 	defaultMasker.typeToStructCache = make(map[reflect.Type]structType)
+	defaultMasker.visited = make(map[uintptr]reflect.Value)
 	SetMaskChar(maskChar)
 }
 

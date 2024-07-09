@@ -672,7 +672,7 @@ func (m *Masker) maskStringKeyMap(rv reflect.Value, tag string) (reflect.Value, 
 	switch rv.Type().Elem().Kind() {
 	case reflect.String:
 		mm := make(map[string]string, rv.Len())
-		for k, v := range rv.Interface().(map[string]string) {
+		for k, v := range rv.Convert(reflect.TypeOf(mm)).Interface().(map[string]string) {
 			rvf, err := m.String(m.getTag(tag, k), v)
 			if err != nil {
 				return reflect.Value{}, err
@@ -680,20 +680,20 @@ func (m *Masker) maskStringKeyMap(rv reflect.Value, tag string) (reflect.Value, 
 			mm[k] = rvf
 		}
 
-		return reflect.ValueOf(mm), nil
+		return reflect.ValueOf(mm).Convert(rv.Type()), nil
 	case reflect.Int:
 		mm := make(map[string]int, rv.Len())
-		for k, v := range rv.Interface().(map[string]int) {
+		for k, v := range rv.Convert(reflect.TypeOf(mm)).Interface().(map[string]int) {
 			rvf, err := m.Int(m.getTag(tag, k), v)
 			if err != nil {
 				return reflect.Value{}, err
 			}
 			mm[k] = rvf
 		}
-		return reflect.ValueOf(mm), nil
+		return reflect.ValueOf(mm).Convert(rv.Type()), nil
 	case reflect.Float64:
 		mm := make(map[string]float64, rv.Len())
-		for k, v := range rv.Interface().(map[string]float64) {
+		for k, v := range rv.Convert(reflect.TypeOf(mm)).Interface().(map[string]float64) {
 			rvf, err := m.Float64(m.getTag(tag, k), v)
 			if err != nil {
 				return reflect.Value{}, err
@@ -701,7 +701,7 @@ func (m *Masker) maskStringKeyMap(rv reflect.Value, tag string) (reflect.Value, 
 			mm[k] = rvf
 		}
 
-		return reflect.ValueOf(mm), nil
+		return reflect.ValueOf(mm).Convert(rv.Type()), nil
 	default:
 		rv2 := reflect.MakeMapWithSize(rv.Type(), rv.Len())
 		iter := rv.MapRange()

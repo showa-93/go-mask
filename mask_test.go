@@ -2607,7 +2607,6 @@ func newMaskerTestCase(name string) string {
 func cleanup(t *testing.T) {
 	t.Helper()
 	defaultMasker.typeToStructCache = make(map[reflect.Type]structType)
-	defaultMasker.visited = make(map[uintptr]reflect.Value)
 	SetMaskChar(maskChar)
 }
 

@@ -702,6 +702,7 @@ func (m *Masker) maskMap(rv reflect.Value, tag string, mp reflect.Value, cb circ
 		if rv2.IsValid() {
 			if mp.CanSet() {
 				mp.Set(rv2)
+				return mp, nil
 			}
 			return rv2, nil
 		}

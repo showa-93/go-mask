@@ -25,7 +25,11 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: matrix.go-version == '1.22'
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           file: ./coverage.out
           fail_ci_if_error: true
+          flags: unittests
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

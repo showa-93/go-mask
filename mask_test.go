@@ -2476,6 +2476,125 @@ func TestMaskZero(t *testing.T) {
 	}
 }
 
+func TestCyclicGraph(t *testing.T) {
+	const elCnt = 9
+	type structTest struct {
+		Usagi              string `mask:"filled"`
+		Slice              []interface{}
+		SlicePtr           *[]interface{}
+		Array              [elCnt]interface{}
+		ArrayPtr           *[elCnt]interface{}
+		StructPtr          *structTest
+		Map                map[string]interface{}
+		MapPtr             *map[string]interface{}
+		Interface          interface{}
+		InterfaceStructPtr interface{}
+	}
+
+	createDataSet := func(val string) *structTest {
+		cyclicSlice := make([]interface{}, elCnt)
+		cyclicArray := [elCnt]interface{}{}
+
+		cyclicStruct := structTest{
+			Usagi: val,
+		}
+
+		cyclicMap := map[string]interface{}{
+			"Usagi":     "ヤハッ！",
+			"StructPtr": &cyclicStruct,
+			"ArrayPtr":  &cyclicArray,
+			"SlicePtr":  &cyclicSlice,
+			"Array":     cyclicArray,
+			// cmp.Diff does not support cycling this way
+			//"Slice": cyclicSlice,
+		}
+		cyclicMap["MapPtr"] = &cyclicMap
+		cyclicMap["Map"] = cyclicMap
+
+		cyclicSlice[0] = "ヤハッ！"
+		cyclicSlice[1] = &cyclicMap
+		cyclicSlice[2] = &cyclicStruct
+		cyclicSlice[3] = &cyclicArray
+		cyclicSlice[4] = &cyclicSlice
+		cyclicSlice[5] = cyclicMap
+		cyclicSlice[7] = cyclicArray
+		// cmp.Diff does not support cycling this way
+		//cyclicSlice[8] = cyclicSlice
+
+		cyclicArray[0] = "ヤハッ！"
+		cyclicArray[1] = &cyclicMap
+		cyclicArray[2] = &cyclicStruct
+		cyclicArray[3] = &cyclicArray
+		cyclicArray[4] = &cyclicSlice
+		cyclicArray[5] = cyclicMap
+		cyclicArray[7] = cyclicArray
+		// cmp.Diff does not support cycling this way
+		//cyclicArray[8] = cyclicSlice
+
+		cyclicStruct.MapPtr = &cyclicMap
+		cyclicStruct.StructPtr = &cyclicStruct
+		cyclicStruct.ArrayPtr = &cyclicArray
+		cyclicStruct.SlicePtr = &cyclicSlice
+		cyclicStruct.Map = cyclicMap
+		cyclicStruct.Array = cyclicArray
+		// cmp.Diff does not support cycling this way
+		//cyclicStruct.Slice = cyclicSlice
+		cyclicStruct.Interface = cyclicStruct
+		cyclicStruct.InterfaceStructPtr = &cyclicStruct
+
+		// cmp.Diff does not support cycling this way
+		//cyclicArray[6] = cyclicStruct
+		//cyclicSlice[6] = cyclicStruct
+
+		return &cyclicStruct
+	}
+
+	ds := createDataSet("ヤハッ！")
+	expected := createDataSet("****")
+
+	tests := map[string]struct {
+		input any
+		want  any
+	}{
+		"slice": {
+			input: ds.Slice,
+			want:  expected.Slice,
+		},
+		"array": {
+			input: ds.Array,
+			want:  expected.Array,
+		},
+		"struct": {
+			input: *ds,
+			want:  *expected,
+		},
+		"struct ptr": {
+			input: ds,
+			want:  expected,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			for _, isCached := range []bool{false, true} {
+				name := "uncached"
+				if isCached {
+					name = "cached"
+				}
+				t.Run(name, func(t *testing.T) {
+					m := newMasker()
+					m.Cache(isCached)
+					got, err := m.Mask(tt.input)
+					assert.Nil(t, err)
+					if diff := cmp.Diff(tt.want, got); diff != "" {
+						t.Error(diff)
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestAnyMaskFunc(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
 		m := newMasker()
@@ -2606,7 +2725,7 @@ func newMaskerTestCase(name string) string {
 
 func cleanup(t *testing.T) {
 	t.Helper()
-	defaultMasker.typeToStructCache = make(map[reflect.Type]structType)
+	defaultMasker.cb = sharedCircuitBreaker{}
 	SetMaskChar(maskChar)
 }
 

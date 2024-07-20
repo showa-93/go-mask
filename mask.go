@@ -613,7 +613,7 @@ func (m *Masker) maskSlice(rv reflect.Value, tag string, mp reflect.Value, cb ci
 		rv2 = reflect.New(rv.Type()).Elem()
 	} else {
 		if rv2 = cb.get(rv); rv2.IsValid() {
-			if mp.IsValid() {
+			if mp.CanSet() {
 				mp.Set(rv2)
 			}
 			return rv2, nil
@@ -657,7 +657,7 @@ func (m *Masker) maskSlice(rv reflect.Value, tag string, mp reflect.Value, cb ci
 		}
 	}
 
-	if mp.IsValid() {
+	if mp.CanSet() {
 		mp.Set(rv2)
 		return mp, nil
 	}
@@ -677,7 +677,7 @@ func (m *Masker) maskMap(rv reflect.Value, tag string, mp reflect.Value, cb circ
 			return reflect.Value{}, err
 		}
 		if rv2.IsValid() {
-			if mp.IsValid() {
+			if mp.CanSet() {
 				mp.Set(rv2)
 			}
 			return rv2, nil
@@ -688,7 +688,7 @@ func (m *Masker) maskMap(rv reflect.Value, tag string, mp reflect.Value, cb circ
 	if err != nil {
 		return reflect.Value{}, err
 	}
-	if mp.IsValid() {
+	if mp.CanSet() {
 		mp.Set(rv2)
 		return mp, nil
 	}
@@ -854,7 +854,7 @@ func (m *Masker) maskUint(rv reflect.Value, tag string, mp reflect.Value) (refle
 
 func (m *Masker) maskfloat(rv reflect.Value, tag string, mp reflect.Value) (reflect.Value, error) {
 	if tag == "" {
-		if mp.IsValid() {
+		if mp.CanSet() {
 			mp.Set(rv)
 			return mp, nil
 		}
@@ -865,7 +865,7 @@ func (m *Masker) maskfloat(rv reflect.Value, tag string, mp reflect.Value) (refl
 	if err != nil {
 		return reflect.Value{}, err
 	}
-	if mp.IsValid() {
+	if mp.CanSet() {
 		mp.SetFloat(fp)
 		return mp, nil
 	}

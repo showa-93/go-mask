@@ -2742,7 +2742,7 @@ func newMaskerTestCase(name string) string {
 
 func cleanup(t *testing.T) {
 	t.Helper()
-	defaultMasker.cb = sharedCircuitBreaker{}
+	defaultMasker.typeToStructCache.v = make(map[reflect.Type]structType)
 	SetMaskChar(maskChar)
 }
 

@@ -145,12 +145,30 @@ type structType struct {
 	structFields []reflect.StructField
 }
 
+type typeToStructCache struct {
+	m sync.RWMutex
+	v map[reflect.Type]structType
+}
+
+func (c *typeToStructCache) get(rt reflect.Type) (structType, bool) {
+	defer c.m.RUnlock()
+	c.m.RLock()
+	st, ok := c.v[rt]
+	return st, ok
+}
+
+func (c *typeToStructCache) set(rt reflect.Type, st structType) {
+	defer c.m.Unlock()
+	c.m.Lock()
+	c.v[rt] = st
+}
+
 // Masker is a struct that defines the masking process.
 type Masker struct {
-	cache    bool
-	cb       sharedCircuitBreaker
-	tagName  string
-	maskChar string
+	cache             bool
+	typeToStructCache *typeToStructCache
+	tagName           string
+	maskChar          string
 
 	maskFieldMap map[string]string
 
@@ -172,8 +190,10 @@ func NewMasker() *Masker {
 		tagName:  TagName,
 		maskChar: maskChar,
 
-		cb:           sharedCircuitBreaker{},
-		cache:        true,
+		cache: true,
+		typeToStructCache: &typeToStructCache{
+			v: make(map[reflect.Type]structType),
+		},
 		maskFieldMap: make(map[string]string),
 
 		maskStringFuncKeys:  make([]string, 0, 10),
@@ -443,12 +463,7 @@ func (m *Masker) MaskZero(arg string, value any) (any, error) {
 // Mask returns an object with the mask applied to any given object.
 // The function's argument can accept any type, including pointer, map, and slice types, in addition to struct.
 func (m *Masker) Mask(target any) (ret any, err error) {
-	var cb circuitBreaker
-	if m.cache {
-		cb = &m.cb
-	} else {
-		cb = localCircuitBreaker{}
-	}
+	cb := localCircuitBreaker{}
 	rv, err := m.mask(reflect.ValueOf(target), "", reflect.Value{}, cb)
 	if err != nil {
 		return ret, err
@@ -465,20 +480,6 @@ func (cb localCircuitBreaker) get(rv reflect.Value) reflect.Value {
 
 func (cb localCircuitBreaker) set(rv reflect.Value, mp reflect.Value) {
 	cb[getAddr(rv.Interface())] = mp
-}
-
-type sharedCircuitBreaker sync.Map
-
-func (cb *sharedCircuitBreaker) get(rv reflect.Value) reflect.Value {
-	val, ok := (*sync.Map)(cb).Load(getAddr(rv.Interface()))
-	if !ok {
-		return reflect.Value{}
-	}
-	return val.(reflect.Value)
-}
-
-func (cb *sharedCircuitBreaker) set(rv reflect.Value, mp reflect.Value) {
-	(*sync.Map)(cb).Store(getAddr(rv.Interface()), mp)
 }
 
 func isCircuitBreakerSupported(k reflect.Kind) bool {
@@ -571,9 +572,27 @@ func (m *Masker) maskStruct(rv reflect.Value, _ string, mp reflect.Value, cb cir
 		return reflect.Zero(rv.Type()), nil
 	}
 
-	rt := rv.Type()
-	if !mp.IsValid() {
-		mp = reflect.New(rt).Elem()
+	var (
+		rt = rv.Type()
+		st structType
+		ok bool
+	)
+	if m.cache {
+		st, ok = m.typeToStructCache.get(rt)
+		if !ok {
+			st.value = reflect.New(rt).Elem()
+			for i := 0; i < rt.NumField(); i++ {
+				st.structFields = append(st.structFields, rt.Field(i))
+			}
+			m.typeToStructCache.set(rt, st)
+		}
+		if !mp.IsValid() {
+			mp = st.value
+		}
+	} else {
+		if !mp.IsValid() {
+			mp = reflect.New(rt).Elem()
+		}
 	}
 
 	// copy private fields
@@ -581,7 +600,11 @@ func (m *Masker) maskStruct(rv reflect.Value, _ string, mp reflect.Value, cb cir
 
 	for i := 0; i < rt.NumField(); i++ {
 		var field reflect.StructField
-		field = rt.Field(i)
+		if m.cache {
+			field = st.structFields[i]
+		} else {
+			field = rt.Field(i)
+		}
 		// skip private field
 		if !field.IsExported() {
 			continue

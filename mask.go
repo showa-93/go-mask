@@ -566,7 +566,7 @@ func (m *Masker) maskPtr(rv reflect.Value, tag string, _ reflect.Value, cb circu
 	return mp, nil
 }
 
-func (m *Masker) maskStruct(rv reflect.Value, tag string, mp reflect.Value, cb circuitBreaker) (reflect.Value, error) {
+func (m *Masker) maskStruct(rv reflect.Value, _ string, mp reflect.Value, cb circuitBreaker) (reflect.Value, error) {
 	if rv.IsZero() {
 		return reflect.Zero(rv.Type()), nil
 	}
@@ -575,6 +575,9 @@ func (m *Masker) maskStruct(rv reflect.Value, tag string, mp reflect.Value, cb c
 	if !mp.IsValid() {
 		mp = reflect.New(rt).Elem()
 	}
+
+	// copy private fields
+	mp.Set(rv)
 
 	for i := 0; i < rt.NumField(); i++ {
 		var field reflect.StructField

@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"testing"
+	"time"
 
 	"reflect"
 
@@ -252,7 +253,23 @@ func TestMask(t *testing.T) {
 			want: struct {
 				Float64 float64 `mask:"test"`
 				private string  `mask:"test"`
-			}{Float64: math.MaxFloat64},
+			}{
+				Float64: math.MaxFloat64,
+				private: "x",
+			},
+		},
+		"struct time.Time": {
+			prepare: func(*Masker) {},
+			input: struct {
+				Time time.Time
+			}{
+				Time: time.Date(2024, 7, 12, 13, 4, 5, 6, time.UTC),
+			},
+			want: struct {
+				Time time.Time
+			}{
+				Time: time.Date(2024, 7, 12, 13, 4, 5, 6, time.UTC),
+			},
 		},
 	}
 
